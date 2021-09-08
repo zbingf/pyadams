@@ -1,0 +1,2 @@
+python tk_rpc_compare.py
+pause

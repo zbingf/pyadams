@@ -1,0 +1,19 @@
+{
+    "TRANSIENT_MODAL":{
+        "GRID_ID"    : 99000000, 
+        "RBE2_ID"    : 98000000,
+        
+        "EIGRL_ID"   : 11000,
+        "TSTEP_ID"   : 11100,
+        "TABDMP1_ID" : 11200,
+        "DLOAD_ID"   : 11300,
+        "TABLED1_ID" : 12000,
+        "FORCE_ID"   : 13000,
+        "TLOAD1_ID"  : 14000,
+        "COMP_ID"    : 15000,
+
+        "LOADSTEP_ID": 10000,
+        
+        "//"         : "模态法-瞬态响应-加载处理, 各部件ID号"
+    }
+}

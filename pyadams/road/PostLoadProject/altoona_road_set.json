@@ -1,0 +1,41 @@
+{
+    "ca_2":{
+        "velocity"          : 16,
+        "samplerate"        : 512,
+        "time"              : 12,
+        "x_start"           : 2000,
+        "x_dis_up_down"     : 2438,
+        "x_dis_up"          : 7315,
+        "x_dis_delta"       : 8840,
+        "height"            : 152
+    },
+
+    "ca_5":{
+        "velocity"          : 32,
+        "samplerate"        : 512,
+        "time"              : 6,
+        "x_start"           : 2000
+    },
+
+    "ca_6": {
+        "velocity"          : 32,
+        "samplerate"        : 512,
+        "time"              : 8,
+        "x_start"           : 2000,
+        "y_angle_deg"       : 15,
+        "height"            : 19.05,
+        "length_washboard"  : 427,
+        "x_dis_washboard"   : 1067,
+        "num_washboard"     : 39
+    },
+
+    "ca_7": {
+        "velocity"          : 8,
+        "samplerate"        : 512,
+        "time"              : 10,
+        "x_start"            : 2000,
+        "x_dis_up_down"     : 76,
+        "x_dis_down"        : 1068,
+        "height"            : -102
+    }
+}
