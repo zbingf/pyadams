@@ -174,6 +174,8 @@ class AdmSimCalCarPostUi(TkUi):
         # =========================
         logger.info('new_res_paths:'+pprint.pformat(new_res_paths))
         self.print('计算完成')
+        print('\n------计算完成------\n')
+        logger.info('\n------计算完成------\n')
 
         return None
 

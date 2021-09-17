@@ -25,7 +25,8 @@ logger = logging.getLogger(PY_FILE_NAME)
 ADAMS_VERSION='adams2017_2'
 SIM_LIMIT_MINUTE = 60 # 仿真时限 min
 
-def bat_path_search(bat_name): # 定位bat路径
+# 定位bat路径
+def bat_path_search(bat_name): 
     '''
         定位bat路径
         用于cmd调用
@@ -69,7 +70,8 @@ def bat_path_search(bat_name): # 定位bat路径
     return fullPath
 
 
-def is_sim_success(res_path,sim_minute): # 通过判断 msg内容 来鉴别仿真是否完结
+# 通过判断 msg内容 来鉴别仿真是否完结
+def is_sim_success(res_path, sim_minute): 
     ''' 
         通过判断 msg内容 来鉴别仿真是否完结
         res_path路径为Adams仿真路径
@@ -94,27 +96,33 @@ def is_sim_success(res_path,sim_minute): # 通过判断 msg内容 来鉴别仿�
             pass
         time.sleep(1)
         n += 1
-        if n>sim_minute*60:
+        if n > sim_minute*60:
+            logger.warning("进程计算超时, 停止计算")
             break
     return isSuccess
 
-def call_bat_sim(batpath, respath, simlimit=SIM_LIMIT_MINUTE):
-    # subprocess.Popen 运行batpath
-    # 通过cmdlink.is_sim_success进行判定是否计算完成
-    # 
-    msg_path = respath[0:-3]+r'msg'
+
+# 运行bat进行计算
+def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE):
+    """
+        subprocess.Popen 运行bat_path
+        通过cmdlink.is_sim_success进行判定是否计算完成
+    """
+
+    msg_path = res_path[0:-3]+r'msg'
     try:
         os.remove(msg_path)
     except:
         pass
 
-    proc = subprocess.Popen(batpath)
+    proc = subprocess.Popen(bat_path)
     main_pid = proc.pid
     try:
         # 判定是否运行完毕，并结束进程
-        if is_sim_success(respath, simlimit):
+        if is_sim_success(res_path, simlimit):
             # 'msg' 信息到 finish即结束
-            logger.info(f'“msg”信息检测到 finished 判定结束,关闭子程序')
+            logger.info(f'“msg”信息检测到 finished 判定结束, 关闭子程序')
+            logger.info(f'Res Path : {res_path}')
             try:
                 # 防止计算过快
                 p = psutil.Process(main_pid)
@@ -127,17 +135,19 @@ def call_bat_sim(batpath, respath, simlimit=SIM_LIMIT_MINUTE):
                 proc.kill()
                 logger.info(f'进程（id: {main_pid}）及子程序结束')
             except:
-                logger.info('进程本身已经终止,返回respath')
-                return respath
+                logger.info('进程本身已经终止,返回res_path')
+                return res_path
 
-        return respath
+        return res_path
     except:
         # print('error in kiil_pid')
-        logger.warning(f'仿真进程（id{main_pid}）有问题,respath返回False')
+        logger.warning(f'仿真进程（id{main_pid}）有问题,res_path返回False')
     
     return False
 
-def cmd_file_send(cmd_path=None,mode='car',res_path=None,minutes=30): # 调用adams模型 运行cmd文件
+
+# 调用adams模型 运行cmd文件
+def cmd_file_send(cmd_path=None, mode='car', res_path=None, minutes=30): 
     """
         cmd文件发送
         mode 计算模式选择： 'car' 'view' ；默认'car'
@@ -145,7 +155,10 @@ def cmd_file_send(cmd_path=None,mode='car',res_path=None,minutes=30): # 调用ad
         minutes 运行时常
     """
     bat_path = bat_path_search(ADAMS_VERSION)
-    mode_dict = {'car':'acar','view':'aview'}
+    mode_dict = {
+        'car': 'acar', 
+        'view': 'aview'}
+
     if cmd_path == None: # 不运行cmd文件 测试用
         cmds = bat_path+f' {mode_dict[mode.lower()]} ru-st b exit'
         subprocess.call(cmds)
@@ -158,13 +171,15 @@ def cmd_file_send(cmd_path=None,mode='car',res_path=None,minutes=30): # 调用ad
                 subprocess.call(cmds)
             else:
                 # res路径存在
-                call_bat_sim(cmds, respath, simlimit=SIM_LIMIT_MINUTE)
+                call_bat_sim(cmds, res_path, simlimit=SIM_LIMIT_MINUTE)
             return True
         else:
-            print('文件不存在')
+            logger.error(f"文件不存在: {cmd_path}")
             return False
 
-def cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, minutes=30): # 待用并运行cmd命令
+
+# 调用并运行cmd命令
+def cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, minutes=30): 
     """
         cmds 命令行 字符串或列表格式
         cmd_path 目标存储文件路径
@@ -191,15 +206,14 @@ def cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, min
             os.remove(cmd_path)
         return False
 
+# -----------------------------------------
+# 测试
 def test_cmd_send():
     pass
 
     cmd_path = os.path.abspath(r'..\tests\call_cmdlink\test_view.cmd')
     os.chdir(os.path.dirname(cmd_path))
     cmd_send(f'file command read file_name="{cmd_path}"',mode='view')
-
-
-
 
 
 

@@ -18,7 +18,7 @@ from pyadams.ui import tk_carpath_check,    tk_drv2cmd,             tk_adm_reqch
 from pyadams.ui import tk_res_samplerate,   tk_res2csv,             tk_bdf_transient_modal
 from pyadams.ui import tk_result_compare
 from pyadams.ui import tk_post_handle_s,    tk_post_handle_crc,     tk_adm_sim
-from pyadams.ui import tk_post_tilt
+from pyadams.ui import tk_post_tilt,        tk_plot_scatter,        tk_adm_sim_car_post
 from pyadams.ui import tk_adm_multirun_femfat_lab
 import re
 import tkinter as tk
@@ -43,6 +43,7 @@ tk_drv2cmd,             Drv2CmdUi,              数据转化-Drv转Cmd
 tk_res2csv,             Res2CsvUi,              数据转化-Res转Csv
 
 tk_result_compare,      ResultCompareUi,        数据对比-result-A/B
+tk_plot_scatter,        PlotScatterRsp,         数据对比-散点图scatter
 
 tk_bdf_transient_modal, BdfTransientModalPreUi, 模态叠加-BDF生成
 
@@ -50,7 +51,9 @@ tk_post_handle_s,       PostHandleSUi,          数据处理-蛇行试验
 tk_post_handle_crc,     PostHandleCrcUi,        数据处理-稳态回转
 tk_post_tilt,           PostTiltUi,             数据处理-静侧翻角
 
-tk_adm_sim,             AdmSimCalUi,                  AdmSimCalUi
+
+tk_adm_sim,             AdmSimCalUi,            AdmSimCal
+tk_adm_sim_car_post,    AdmSimCalCarPostUi,     AdmSimCal-CarPos
 tk_adm_multirun_femfat_lab, AdmFemfatLabNosieUi , Femfat-Lab白噪声
 '''
 

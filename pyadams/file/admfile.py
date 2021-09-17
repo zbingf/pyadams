@@ -190,6 +190,7 @@ class AdmFile:
         with open(newfilepath,'w') as f :
             f.write(self.filestr)
 
+
 class AdmCar(AdmFile): # 基于AdmFile扩展模型读取范围
     """
         在AdmFile基础上扩展解析范围
@@ -326,6 +327,7 @@ class AdmCar(AdmFile): # 基于AdmFile扩展模型读取范围
         # 统一设置 路面路径
         for name in self.car_road:
             self.car_road[name].set_path(path)
+
 
 class AdmModel:
     """
@@ -479,7 +481,9 @@ class AdmModel:
         # print(comp_loc)
         return req_loc,comp_loc
 
+
 # ===================================Base
+# 基础模块
 class AdmCmd:
     """
         子模块辨识
@@ -544,6 +548,7 @@ class AdmCmd:
                 list1[n] = int(list1[n])
 
         return ', {} = {}'.format(str1,','.join([str(n)+r for n in list1]))
+
 
 class AdmSpline(AdmCmd): 
     """
@@ -708,6 +713,7 @@ class AdmSpline(AdmCmd):
                         )
             # print(newlist)
         return newlist
+
     
 class AdmPart(AdmCmd):
     """
@@ -746,6 +752,7 @@ class AdmPart(AdmCmd):
         self.cmdlist = newlist
         return newlist
 
+
 class AdmMarker(AdmCmd):
     """
         marker 辨识
@@ -781,6 +788,7 @@ class AdmMarker(AdmCmd):
         
         self.cmdlist = newlist
         return newlist
+
 
 class AdmBushing(AdmCmd):
     """
@@ -837,6 +845,7 @@ class AdmBushing(AdmCmd):
         
         self.cmdlist = newlist
         return newlist
+
 
 class AdmSforce_old(AdmCmd):
     """
@@ -912,6 +921,7 @@ class AdmSforce_old(AdmCmd):
             return cmdlist
         return False
 
+
 class AdmPoint(AdmCmd):
     """
         暂未使用
@@ -919,6 +929,7 @@ class AdmPoint(AdmCmd):
     def __init__(self,cmdlist):
         super().__init__(cmdlist)
         pass
+
 
 class AdmArray(AdmCmd): # Array 数据编译
     
@@ -987,6 +998,7 @@ class AdmArray(AdmCmd): # Array 数据编译
         self.cmdlist = newlist
         # print(newlist)
         return newlist
+
 
 class AdmSforce(AdmCmd):
     """
@@ -1166,6 +1178,7 @@ class AdmSforce(AdmCmd):
                     return True
         return False
 
+
 class AdmVariable(AdmCmd):
     """
     !        adams_view_name='TR_Rear_Suspension.bul_jounce_stop.penetration'
@@ -1219,6 +1232,7 @@ class AdmVariable(AdmCmd):
         """暂不进行更改"""
         pass
 
+
 class AdmString(AdmCmd):
     """
         字符串庶读取
@@ -1267,6 +1281,7 @@ class AdmString(AdmCmd):
         self.cmdlist = newlist
 
         return newlist
+
 
 class AdmRequest(AdmCmd): # 用于req文件
     """
@@ -1324,6 +1339,7 @@ class AdmRequest(AdmCmd): # 用于req文件
                 
         # print(self.components)
 
+
 class AdmMatrix(AdmCmd): # 包含柔性体文件数据
     """
     注: Matrix 开头多一行单位备注 !!!!!!
@@ -1379,6 +1395,7 @@ class AdmMatrix(AdmCmd): # 包含柔性体文件数据
         self.cmdlist = newlist
 
         return newlist
+
 
 class AdmFlexBody(AdmCmd):
     """
@@ -1470,6 +1487,7 @@ class AdmRoad: # 路面路径解析
         self.string_obj.strline = path
         self.string_obj.updata()
 
+
 class AdmSpring: # 弹簧编辑
     
     def __init__(self,force_obj,spline_obj):
@@ -1540,6 +1558,7 @@ class AdmSpring: # 弹簧编辑
 
         return True
 
+
 class AdmDamper: # 减振器编辑
     
     def __init__(self,force_obj,spline_obj):
@@ -1565,6 +1584,7 @@ class AdmDamper: # 减振器编辑
         self.spline_obj.updata(xlist,ylist)
 
         return True
+
 
 class AdmCarBushing: # 衬套数据编辑
 
@@ -1791,10 +1811,12 @@ class AdmCarBushing: # 衬套数据编辑
 
         self.set_array(locs=ts,values=[c]*len(ts),edit_type='damper')
 
+
 class AdmFlex: # 柔性体文件辨识
     def __init__(self,matrix_obj):
         matrix_obj.filename
         pass
+
 
 # ===================================
 class AdmEdit: # values_cmd 字符串解析

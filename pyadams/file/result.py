@@ -147,6 +147,7 @@ class ResFile(ReusltData):
 
         if not isReload:
             self._set_request_data()
+            logger.warning(f'ResFile: {self.name} do not reload!!!')
             return None
 
         fileid = open(file_path,'r')
@@ -392,6 +393,7 @@ class ReqFile(ReusltData):
         
         if not isReload:
             self._set_request_data()
+            logger.warning(f'ReqFile: {self.name} do not reload!!!')
             return None
 
         f = open(file_path,'r')
@@ -777,7 +779,7 @@ class DataModel:
             self.objs       = DataModel.models[name].objs
             self.file_types = DataModel.models[name].file_types
             self.others     = DataModel.models[name].others
-            logger.warning(f'DataModel["{name}"] is exists')
+            logger.warning(f'DataModel["{name}"] is exists, using old data.')
 
     def __getitem__(self, k): return self.objs[k]
 

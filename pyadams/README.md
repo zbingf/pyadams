@@ -1,8 +1,6 @@
-# 新版更新目标 2021.06.02
+# 新版更新目标 2021.09.17
 
-## 数据结构更新 
-+ file.result : 后处理
-	+ 
+<!-- ## 数据结构更新  -->
 
 
 # pyadams
@@ -18,18 +16,22 @@
 
 ## car
 Adams/Car 应用模块
++ adm_edit_leafspring: leafspring 2019版 adm编辑
++ adm_sim 		: admas/car adm模型仿真管理模块
 + cal_road_correlation : 用户关联计算模块,粒子群(PSO)算法
 + post_force_load : 后处理-载荷分解
 + post_handle_crc : 后处理-操纵稳定性-稳态回转
 + post_handle_s : 后处理-操纵稳定性-蛇行试验
-+ sus_ite : 迭代-ADAMS-悬架台架迭代
++ post_tilt 	: 后处理-侧翻台架
++ request_check : request__部分__数据检查
 + search_part_mass : 检索车身子系统,获取部件质量参数
 + search_spring_k : 检索弹簧文件,计算弹簧平均刚度
-+ request_check : request__部分__数据检查
-+ adm_ride_edit : ride整车台架模型, amd文件处理, __未完成__
++ sus_ite : 迭代-ADAMS-悬架台架迭代
+
 
 ## file 
 文件处理模块
++ adm_post_edit : adams/car ride 整车四立柱台架模型, amd文件处理
 + admfile : ADAMS adm模型文件辨识编辑模块
 + result : 后处理文件读取, res&rsp
 + tdx_file: TDX格式文件读取, 轮胎数据

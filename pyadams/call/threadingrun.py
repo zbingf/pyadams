@@ -11,7 +11,7 @@ logger = logging.getLogger(PY_FILE_NAME)
 
 
 # 数值列表数据，四舍五入
-listround = lambda list1,n: [round(v,n) for v in list1]
+listround = lambda list1, n: [round(v,n) for v in list1]
 # 保留非空格数据并转为小写
 strcal = lambda str1: re.sub(r'\s','',str1).lower() 
 

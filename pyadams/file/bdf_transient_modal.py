@@ -12,7 +12,7 @@ DataModel = result.DataModel
 
 
 # 路面配置读取
-set_path = os.path.join(os.path.dirname(__file__), 'bdf_set.json')
+set_path = os.path.join(os.path.dirname(__file__), 'bdf_transient_modal.json')
 with open(set_path, 'r', encoding='utf-8') as f: bdf_set = json.load(f)
 
 # # 初始值设置

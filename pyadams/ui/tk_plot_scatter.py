@@ -1,3 +1,7 @@
+"""
+    数据读取
+    散点图
+"""
 import os
 import logging
 import tkinter as tk

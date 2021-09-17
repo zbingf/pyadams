@@ -47,6 +47,7 @@ class AdmFileData: # 仿真文件管理
         self.acf_path = self.adm_path[:-3]+'acf'
         self.xml_path = self.adm_path[:-3]+'xml'
         self.mtx_paths = []
+        self.rdf_paths = []
         self.target_dir = None
 
         if not self.is_acf_exists():
@@ -58,9 +59,49 @@ class AdmFileData: # 仿真文件管理
             logger.warning('xml路径不存在, 创建新文件')
 
         self.parase_adm_for_mtx()
+        self.parase_adm_for_rdf()
+
+    def parase_adm_for_rdf(self):
+        """
+            解析adm文件 , 获取rdf文件路径
+        """
+        strcal = lambda str1: re.sub(r'\s', '', str1).lower()
+
+        adm_path  = self.adm_path
+        rdf_paths = self.rdf_paths
+
+        # adm文件读取
+        with open(adm_path, 'r') as f:
+            lines = f.readlines()
+        # 柔性体mtxs文件查找
+        rdfs = []
+        for loc, line in enumerate(lines):
+            line = strcal(line)
+            re1 = re.match(r',string=(.*\.rdf)\Z', line)
+            if re1:
+                if '.rpf_file' in lines[loc-2].lower():
+                    rdfs.append(re1.group(1))
+
+        rdf_names = set(rdfs) # 去重
+        for name in rdf_names:
+            if os.path.exists(name):
+                temp_path = os.path.abspath(name)
+            else:
+                temp_dir  = os.path.dirname(adm_path)
+                temp_path = os.path.join(temp_dir, name)
+                if not os.path.exists(temp_path): 
+                    # 没找到路径不列入计算
+                    logger.info(f'未检测到rdf路径: {temp_path}')
+                    continue
+            rdf_paths.append(temp_path)
+
+        self.rdf_paths = rdf_paths
+        return rdf_paths
 
     def parase_adm_for_mtx(self):
-        """解析adm文件 , 获取mtx文件路径"""
+        """
+            解析adm文件 , 获取mtx文件路径
+        """
         strcal = lambda str1: re.sub(r'\s', '', str1).lower()
         # adm文件读取
         with open(self.adm_path, 'r') as f:
@@ -80,7 +121,7 @@ class AdmFileData: # 仿真文件管理
             else:
                 temp_dir  = os.path.dirname(self.adm_path)
                 temp_path = os.path.join(temp_dir, name)
-                if not os.path.exists(temp_path): raise '未检测到mtx路径'
+                if not os.path.exists(temp_path): raise f'未检测到mtx路径: {temp_path}'
 
             self.mtx_paths.append(temp_path)
 
@@ -109,36 +150,51 @@ class AdmFileData: # 仿真文件管理
         new_adm_path = os.path.join(target_dir, os.path.basename(self.adm_path))
         new_acf_path = os.path.join(target_dir, os.path.basename(self.acf_path))
         new_xml_path = os.path.join(target_dir, os.path.basename(self.xml_path))
+        
         new_mtx_paths = []
         for mtx_path in self.mtx_paths:
             new_mtx_paths.append(os.path.join(target_dir, os.path.basename(mtx_path)))
 
+        new_rdf_paths = []
+        for rdf_path in self.rdf_paths:
+            new_rdf_paths.append(os.path.join(target_dir, os.path.basename(rdf_path)))
+
         shutil.copy(self.adm_path, new_adm_path)
         shutil.copy(self.acf_path, new_acf_path)
         shutil.copy(self.xml_path, new_xml_path)
+
         for new_mtx_path, mtx_path in zip(new_mtx_paths, self.mtx_paths):
             shutil.copy(mtx_path, new_mtx_path)
+
+        for new_rdf_path, rdf_path in zip(new_rdf_paths, self.rdf_paths):
+            shutil.copy(rdf_path, new_rdf_path)
 
         self.new_adm_path = new_adm_path
         self.new_acf_path = new_acf_path
         self.new_mtx_paths= new_mtx_paths
         self.new_xml_path = new_xml_path
+        self.new_rdf_paths= new_rdf_paths
+
         path_dir = {
             'adm_path'  : new_adm_path,
             'acf_path'  : new_acf_path,
             'mtx_paths' : new_mtx_paths,
             'xml_path'  : new_xml_path,
+            'rdf_paths' : new_rdf_paths,
             'target_dir': target_dir,
         }
-        logger.info(f'文件新路径{path_dir}')
+
+        logger.info(f'文件新路径: {path_dir}')
         
         return path_dir
 
     def updata_dir(self, target_dir):
         """ 更新&复制路径 """
+
         self.target_dir = os.path.abspath(target_dir)
         self.create_target_dir()
         path_dir = self.copy_files()
+
         return path_dir
 
 
@@ -820,7 +876,7 @@ def test_AdmResult():
     admfd_obj = AdmFileData(adm_path)
     admfd_obj.updata_dir(r'..\tests\car_adm_sim\temp')
     adm_path = admfd_obj.new_adm_path
-    
+    # return None
     sim_param = {'simtype':CAR, 'samplerate':None, 'simtime':None, 'step':None, 
         'version':'2017.2', 'simlimit':60}
 
