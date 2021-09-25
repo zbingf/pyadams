@@ -100,7 +100,7 @@ class TkMainUi(tkui.TkUi):
         frame_first  = tk.Frame(self.window, width='500', height='500', bg='#FFFFFF')
         frame_first.pack(expand=tk.NO)
 
-        global_photo_1 = tk.PhotoImage(file=r'./README/test2.png').zoom(1)
+        global_photo_1 = tk.PhotoImage(file=r'./ui/README/test2.png').zoom(1)
         label_fig = tk.Label(frame_first, image=global_photo_1, width='500', height='500', bg='#FFFFFF')
         label_fig.image = global_photo_1
         label_fig.pack(expand=tk.NO)

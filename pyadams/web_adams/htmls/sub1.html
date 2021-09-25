@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<script type="text/javascript" src="../JS/main.js">/*JavaScript代码*/</script> 
+	<link type="text/css" rel="stylesheet" href="../CSS/main.css">
+	<title>CAE sub 自定义仿真</title>
+</head>
+<body>
+	<p class='title'>ADAMS二次开发<img src="../img/favicon.ico"></p>
+	<!-- <input type="checkbox"> check </input> -->
+	<div id='designSim'>
+		<p>自定义仿真设计</p>
+		<button id="buttonDesignSim" onclick="funDesignSim()">运行</button>
+		<div id='designSim_edit'>
+
+			自定义变量名：
+			<input type="text" id="varName_1" size=3 value='test1'>
+			变化范围：
+			<input type="text" id="varRange_1" size=40 value='300,600,3'>
+			<input type="checkbox" id="checkboxDesignSim_1" checked="1"> 计算 </input>
+			<input type="checkbox" id="checkboxSingle_1" checked="1"> 单一变量 </input>
+			
+			<br>
+
+			自定义变量名：
+			<input type="text" id="varName_2" size=3 value='test2'>
+			变化范围：
+			<input type="text" id="varRange_2" size=40 value="list['1','2','3']">
+			<input type="checkbox" id="checkboxDesignSim_2"> 计算 </input>
+			<input type="checkbox" id="checkboxSingle_2"> 单一变量 </input>
+			<br>
+
+			自定义变量名：
+			<input type="text" id="varName_3" size=3 value='test3'>
+			变化范围：
+			<input type="text" id="varRange_3" size=40 value='300,600,3'>
+			<input type="checkbox" id="checkboxDesignSim_3"> 计算 </input>
+			<input type="checkbox" id="checkboxSingle_3"> 单一变量 </input>
+			<br>
+
+			自定义变量名：
+			<input type="text" id="varName_4" size=3 value='test4'>
+			变化范围：
+			<input type="text" id="varRange_4" size=40 value='300,600,3'>
+			<input type="checkbox" id="checkboxDesignSim_4"> 计算 </input>
+			<input type="checkbox" id="checkboxSingle_4"> 单一变量 </input>
+			<br>
+
+			自定义变量名：
+			<input type="text" id="varName_5" size=3 value='test5'>
+			变化范围：
+			<input type="text" id="varRange_5" size=40 value='300,600,3'>
+			<input type="checkbox" id="checkboxDesignSim_5"> 计算 </input>
+			<input type="checkbox" id="checkboxSingle_5"> 单一变量 </input>
+
+		</div>
+
+		注：<br>
+		1、编辑cmd命令,命令间隔符号：$$；python命令开头：^python^;cmd仿真命令开头:^simulate^ &nbsp; (小写)<br>
+		2、cmd命令更改 {自定义变量名} <br>
+		3、变化范围eg: 40,60,2 (最低40，最高60，个数2) 或者列表： list['test','test2','test3']<br>
+		4、未选择单一变量的，默认跟随第一个设置的单一变量变化<br>
+		<textarea id='editCmd'>acar standard_interface hardpoint &
+hardpoint=.MDI_Demo_Vehicle.TR_Front_Suspension.ground.hpl_top_mount &
+location={test1}, -500.0, 680.0 &
+symmetric=yes
+$$
+analysis delete analysis_name=.MDI_Demo_Vehicle.test_{test2}_brake
+$$
+variable set variable=.gui.testState real_value=(eval(REMOVE_FILE("test_{test2}_brake.res")))
+$$
+variable set variable=.gui.testState real_value=(eval(REMOVE_FILE("test_{test2}_brake.req")))
+$$
+^python^springPreload(asyName='.MDI_Demo_Vehicle',cdbName='test',simType='settle')
+$$
+^simulate^acar analysis full_vehicle brake_test submit &
+assembly=.MDI_Demo_Vehicle&
+output_prefix=test_{test2} &
+end_time=10 &     
+number_of_steps=100 &
+analysis_mode=interactive &
+road_data_file="mdids://acar_shared/roads.tbl/2d_flat.rdf" &
+steering_input=locked &
+initial_velocity=60 &
+velocity_units=km_hr &
+start_value=1 &
+gear_position=1 &
+qstatic_prephase=yes &
+log_file=yes &
+final_brake=100 &
+step_duration=0.6
+		
+		</textarea>
+	</div>
+</body>
+
+</html>

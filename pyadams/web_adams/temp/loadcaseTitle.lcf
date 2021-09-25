@@ -1,0 +1,39 @@
+$-----------------------------------------------MDI_HEADER
+  [MDI_HEADER]
+  FILE_TYPE = 'lcf'
+  FILE_VERSION = 4.0
+  FILE_FORMAT = 'ASCII'
+$-----------------------------------------------UNITS
+  [UNITS]
+  LENGTH = 'mm'
+  ANGLE = 'degrees'
+  FORCE = 'newton'
+  MASS = 'kg'
+  TIME = 'second'
+  $ 
+  $Generation Parameters: (Do Not Modify!)
+  $ loadcase = 1
+  $ nsteps = 10 
+  $ bump_disp = 100.00 rebound_disp = -100.00
+  $ steering_input = angle
+  $ stat_steer_pos = 0.00
+  $
+$-----------------------------------------------mode
+  [MODE]
+  STEERING_MODE = 'angle'
+  VERTICAL_MODE = 'length'
+$-----------------------------------------------data
+   [DATA]
+  $COLUMN: input type: type of input data: side:
+  $ (c1) wheel z disp / force left
+  $ (c2) wheel z disp / force right
+  $ (c3) lateral force (y) left
+  $ (c4) lateral force (y) right
+  $ (c5 aligning torque (z-axis) left
+  $ (c6) aligning torque (z-axis) right
+  $ (c7) brake force (y) left
+  $ (c8) brake force (y) right
+  $ (c9) driving force (y) left
+  $ (c10) driving force (y) right
+  $ (c11) steering force / steer angle / rack travel
+  { whl_z_l whl_z_r lat_l lat_r align_l align_r brake_l brake_r drive_l drive_r steer}

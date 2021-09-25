@@ -1,0 +1,51 @@
+/*p*/
+p
+{
+	font-size:15px;
+	text-align:center;
+}
+p.title
+{
+	 /*style='text-align:center;font-size:20px;'*/
+	 /*text-align:center;*/
+	 text-align:center;
+	 font-size:20px;
+}
+input#varRange{width: 50%}
+/*div*/
+div#log,#cmdInput{background-color: rgb(255,255,255);}
+div#fullVehicleAsy{height:350px;}
+div#suspensionAsy{height:325px;width: 100%;}
+div#wheelTravel{/*left*/float:left;width: 50%;}
+div#steerTravel{/*right*/float:right;width: 50%;}
+div#designSim{width: 100%;}
+
+/*textarea*/
+textarea#logSteerTravel,#logWheelTravel
+{	
+	background-color: rgb(255,255,255);
+	height: 150px;
+	width: 96%;
+	overflow:scroll;
+}
+textarea#editCmd
+{
+	background-color: rgb(255,255,255);
+	/*float:left;*/
+	height: 400px;
+	width: 96%;
+	overflow:scroll;
+}
+/*html*/
+html{
+	background-image: linear-gradient(to right , #7A88FF, #7AFFAF);
+}
+/*textarea#simulateCmd
+{
+	background-color: rgb(255,255,255);
+	float:right;
+	height: 300px;
+	width: 48%;
+	overflow:scroll;
+}
+*/

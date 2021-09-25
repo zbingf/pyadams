@@ -1,7 +1,5 @@
-# 新版更新目标 2021.09.17
 
 <!-- ## 数据结构更新  -->
-
 
 # pyadams
 针对ADAMS的模块，包含以下模块
@@ -64,11 +62,16 @@ Adams/Car 应用模块
 
 ## ui
 GUI模块，tkinter调用为主
++ __tk_pyadams_main__:
+	+ 主运行程序,集成大部分ui
+
 + __tk_adm_sim__:
 	+ adm文件编辑仿真
 
 + __tk_drv2cmd__:
 	+ drv数据(RPC3格式)-转-Adams/View Cmd命令,
+
+
 
 ## view
 Adams/View 应用模块,包含adams直接运行的py文件  

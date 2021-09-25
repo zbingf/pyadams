@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<script type="text/javascript" src="JS/main.js">/*JavaScript代码*/</script> 
+	<link type="text/css" rel="stylesheet" href="/CSS/main.css">
+	<title>CAE 1.9</title>
+</head>
+<body>
+	<p class='title'>ADAMS二次开发<img src="img/favicon.ico"></p>
+	<a href="htmls/sub1.html" target="_blank">自定义仿真</a>
+	<br>
+	<!-- 服务器返回数据 -->
+	<div id="log" contenteditable="true"></div>
+	<!-- 配置设置 -->
+	<div id='cfg'>
+		<br>
+		<BUTTON id="buttonUpdataAll" onclick="funUpdataAll()">更新全部</BUTTON><br><br>
+		<button id="buttonCurrent" onclick="funCurrent()">当前</button>
+		当前界面：
+		<input rows="5" cols="50" type="text" id='currentModel'/>
+		<!-- <br><br> -->
+		默认CDB：
+		<input rows="5" cols="50" type="text" id='currentDefaultCDB'/>
+
+		<br><br>
+		<button id="changeCurrent" onclick="funChangeCurrent()">设置</button>
+		<label for="cdbName">CDB库</label> 
+		<select id="cdbName" style="width: 100px" onchange="funAsyName()">
+			<!-- <option value="volvo">Volvo</option> -->
+		</select>
+
+		<label for="asyName">asy名称</label> 
+		<select id="asyName" style="width: 300px" >
+			<!-- <option value="volvo">Volvo</option> -->
+		</select>
+
+		<br>
+		<label for="asyNameOpened">已打开asy:</label> 
+		<select id="asyNameOpened" style="width: 300px" >
+			<!-- <option value="volvo">Volvo</option> -->
+		</select>
+		<button id="closeAsy" onclick="funCloseAsy()">关闭asy</button>
+
+	</div>
+
+	<br><br>
+
+	<!-- 自定义命令-->
+	<div>
+		自定义发送命令
+		<button onclick="funCmdInput()">运行CMD</button>
+		<div id="cmdInput" contenteditable="true">input cmd<br><br></div>
+	</div>
+	
+	
+	<!-- 整车装配-分析 -->
+	<div id="fullVehicleAsy">
+		<p>整车装配 FullVehicle</p>
+		<div id="springPreload">
+			<button id="buttonSpingPreload" onclick="funSpringPreload()">整车预载调整</button>
+			<br>
+			静平衡-分析方式：
+			<input type="radio" name="springPreload_simType" value="settle" checked="value">settle
+			<input type="radio" name="springPreload_simType" value="normal">normal
+		</div>
+		<br>
+		<div id="hardpointAdjust">
+			<button id="buttonHardpointAdjust" onclick="funHardpointAdjust()">硬点调整调整</button>
+			<br>
+			硬点名称：
+			<input type="text" id="hardpointName" size="30">
+			<br>
+			硬点坐标：x,y,z
+			<input type="text" id="hardpointLoc" size="25">
+			<br>
+			对称性：(Y/N/S)
+			<input type="text" id="hardpointSym" size="5">
+		</div>
+		<br>
+		<div id="massAdjust">
+			<button id="buttonMassAdjust" onclick="funMassAdjust()">整车质量调整</button>
+			<br>
+			总质量：
+			<input type="text" id="massW" size="10">
+			<br>
+			Ixx:
+			<input type="text" id="massIxx" size="10">
+			<br>
+			Iyy:
+			<input type="text" id="massIyy" size="10">
+			<br>
+			Izz:
+			<input type="text" id="massIzz" size="10">
+			<br>
+			参考-marker点：
+			<input type="text" id="massMarker" size="20">
+			<br>
+			modify-part:
+			<input type="text" id="massPart" size="20">
+		</div>
+
+	</div>
+
+	<!-- 悬架装配-分析 -->
+	<div id="suspensionAsy">
+		<p>悬架台架 Suspension</p>
+		<div id="wheelTravel"><!-- style="display:none;" -->
+			<button id="buttonWheelTravel" onclick="funWheelTravel()">轮跳行程计算</button>
+			<br>
+			减振器行程：&nbsp;&nbsp;
+			<input type="text" id="damperTravel" size="8" value=80>
+			&nbsp;mm
+			<br>
+			空气弹簧行程：
+			<input type="text" id="airspringTravel" size="8" value=80>
+			&nbsp;mm
+			<br>
+			迭代次数：&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="text" id="wheelTravelIterations" size="8" value=6>
+			<br>
+			允许精度：&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="text" id="wheelTravelPrecisionRange" size="8" value=0.1>
+			&nbsp;mm
+			<br>轮跳增益：&nbsp;&nbsp;&nbsp;&nbsp;
+			<input type="text" id="wheelTravelGain" size="8" value=0.8>
+			<!-- <div id="logWheelTravel" contenteditable="true">
+				<br><br><br><br><br><br><br><br><br>
+			</div> -->
+			<textarea id='logWheelTravel'></textarea>
+		</div>
+		<!-- &nbsp;&nbsp;&nbsp; -->
+		<div id="steerTravel">
+			<button id="buttonSteerTravel" onclick="funSteerTravel()">转向行程计算</button>
+			<br>
+			外轮转角：&nbsp;&nbsp;
+			<input type="text" id="steerOutMax" size="8" value=36>
+			&nbsp;deg
+			<br>
+			内轮转角：&nbsp;&nbsp;
+			<input type="text" id="steerInMax" size="8" value=47>
+			&nbsp;deg
+			<br>
+			迭代次数：&nbsp;&nbsp;
+			<input type="text" id="steerTravelIterations" size="8" value=6>
+			<br>
+			允许精度：&nbsp;&nbsp;
+			<input type="text" id="steerTravelPrecisionRange" size="8" value=0.5>
+			&nbsp;deg
+			<br>
+			转向增益：&nbsp;&nbsp;
+			<input type="text" id="steerTravelGain" size="8" value=15>
+ 			<!--<div id="logSteerTravel" contenteditable="true">
+				<br><br><br><br><br><br><br><br><br>
+			</div> -->
+			<textarea id='logSteerTravel'></textarea>
+		</div>
+	</div>
+</body>
+
+</html>
