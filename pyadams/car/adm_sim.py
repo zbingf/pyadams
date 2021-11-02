@@ -559,6 +559,8 @@ class AdmParam:
             new_key = new_key.replace('2','U')
             self.value_dic['v_'+new_key] = results[key]
 
+        logger.info(f'set_value_orthogonal:results:\n{results}')
+
         return None
 
     # strs-字符串变量更改
@@ -914,7 +916,8 @@ def test_AdmResult():
     is_str_Cal = False
     # =========================修改
     admparam_obj = AdmParam(edit_param)
-    admparam_obj.set_values_gain_2(values_selects, values_gain)
+    # admparam_obj.set_values_gain_2(values_selects, values_gain)
+    admparam_obj.set_value_orthogonal(values_selects, values_gain)
     admparam_obj.set_strs_n(strs_selects, is_str_Cal)
     edit_params = admparam_obj.create_edit_params(base_name='m')
 
@@ -924,6 +927,7 @@ def test_AdmResult():
         admsim_obj.set_sub_dir(sub_name)
         admsim_obj.set_adm_edit(sub_name, edit_params[sub_name])
         admsim_obj.set_sim_param(sub_name, sim_param)
+    return None
     admsim_obj.amd_sim_threading(max_threading)
     res_paths = admsim_obj.res_paths
 

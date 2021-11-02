@@ -981,7 +981,7 @@ class AdmSimUi(TkUi):
                 'texts':['view', 'car四立柱ride', 'car整车Event'],
                 }, frame=label_frame)
 
-        if 'drv_path' in loads and 'isLoad' in loads:
+        if 'drv_path' in loads and 'isLoad'.lower() in loads:
             self.frame_check_entry({
                 'frame':'drv_path', 'check_text':texts['drv_path'], 'check_var':'isLoad',
                 'entry_var':'spline_id', 'entry_width':20,

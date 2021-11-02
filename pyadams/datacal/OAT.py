@@ -139,7 +139,7 @@ def cal_oat(var_tuples):
         str1 = '_'.join([str(value) for value in new_line])
         keys.append(str1)
 
-        list1 = [var_tuples[n][1][value] for value in new_line]
+        list1 = [var_tuples[loc][1][value] for loc, value in enumerate(new_line)]
         results[str1] = list1
 
     return keys, results
@@ -180,10 +180,11 @@ if __name__ == "__main__":
     # print (json.dumps(oat.genSets(case4, mode=1, num=3)))
 
     var_tuples = [
-        (0,[0,1,2,3]),
-        (1,[0,1,2,3]),
-        (2,[0,1,2,3]),
-        (3,[0,1,2,3]),
-        (4,[0,1,2,3]),
+        (0,[10,11,32,43]),
+        (1,[20,21,32,43]),
+        (2,[30,31,32,43]),
+        (3,[40,41,32,43]),
+        (4,[50,51,32,43]),
     ]
     print(cal_oat(var_tuples))
+    
