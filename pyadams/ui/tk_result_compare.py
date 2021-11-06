@@ -1,12 +1,15 @@
 """
     tk_result_compare
+    后处理数据对比评估
 """
 import tkinter.filedialog
 import tkinter.messagebox
 import tkinter as tk
 import json
 import os
+import matplotlib.pyplot as plt
 
+from pyadams.datacal import plot
 from pyadams.file import result
 from pyadams.ui import tkui
 DataModel = result.DataModel
@@ -55,9 +58,11 @@ class ResultCompareUi(tkui.TkUi):
             'button_width' : 15, 'entry_width' : 30,
             })
 
+        self.frame_button({'frame':'set_type', 'button_name':'读取确认截取范围', 'button_width':15, 'func':self.fun_get_xrange, }, frame=None)
+
         self.frame_radiobuttons({
-            'frame':'pdfType', 'var_name':'pdfType',
-            'texts':['pdf-详细', 'pdf-简化']
+            'frame':'set_type', 'var_name':'pdfType',
+            'texts':['pdf-详细', 'pdf-简化', 'pdf-详细-2']
             })
 
         self.frame_buttons_RWR({
@@ -84,9 +89,36 @@ class ResultCompareUi(tkui.TkUi):
         self.sub_frames['b_result'].vars['nrange'].set('None')
         self.sub_frames['b_result'].vars['nchannel'].set('None')
 
+
     def fun_run(self):
 
         self.print('开始计算')
+
+        values, block_size, hz_range = self.fun_data_read()
+        data_obj = self.data_obj
+        dmc_obj = DataModelCompare(data_obj)
+
+        params = {
+            'block_size': {'u':block_size[0], 'l':block_size[1]},
+            'hz_range'  : hz_range,
+            'docx_path' : values['current']['docx_path'],
+            'fig_path'  : values['current']['docx_path'][:-5],
+            'nums'      : [3,2],
+        }
+        print(values['current']['pdfType'])
+        self.print('开始对比-创建pdf文件')
+        pdf_path = dmc_obj.run('a_result', 'b_result', params, pdfType=values['current']['pdfType'])
+        
+        os.popen(pdf_path)
+        # print(pdf_path)
+        dmc_obj.remove_figure_files(dmc_obj.set_key('a_result', 'b_result'))
+        str_pdfpath = '\n'.join(os.path.split(pdf_path))
+        self.print(f'计算完成\n pdf路径:\n{str_pdfpath}')
+        
+        return None
+
+    def fun_data_read(self):
+        # 数据读取
 
         values = {}
         for key in self.sub_frames:
@@ -121,26 +153,47 @@ class ResultCompareUi(tkui.TkUi):
         data_a = data_obj['a_result'].get_data()
         data_b = data_obj['b_result'].get_data()
 
-        dmc_obj = DataModelCompare(data_obj)
+        self.data_a = data_a
+        self.data_b = data_b
+        self.data_obj = data_obj
 
-        params = {
-            'block_size': {'u':block_size[0], 'l':block_size[1]},
-            'hz_range'  : hz_range,
-            'docx_path' : values['current']['docx_path'],
-            'fig_path'  : values['current']['docx_path'][:-5],
-            'nums'      : [3,2],
-        }
+        return values, block_size, hz_range
 
-        self.print('开始对比-创建pdf文件')
-        pdf_path = dmc_obj.run('a_result', 'b_result', params, pdfType=values['current']['pdfType'])
-        
-        os.popen(pdf_path)
-        # print(pdf_path)
-        dmc_obj.remove_figure_files(dmc_obj.set_key('a_result', 'b_result'))
-        str_pdfpath = '\n'.join(os.path.split(pdf_path))
-        self.print(f'计算完成\n pdf路径:\n{str_pdfpath}')
-        
-        return None
+    def fun_get_xrange(self):
+
+        values, block_size, hz_range = self.fun_data_read()
+        data_a = self.data_a
+        data_b = self.data_b
+
+        x_a = [value for value in range(len(data_a[0]))]
+        x_b = [value for value in range(len(data_b[0]))]
+
+        while True:
+            x_start_a, x_end_a = plot.plot_get_x_range(x_a, [data_a[0]], 
+                xlabel='x:n', ylabel='y select 1', title='Data A',
+                legend=['Data-A select 0'])
+            x_start_a, x_end_a = round(x_start_a), round(x_end_a)
+
+            x_start_b, x_end_b = plot.plot_get_x_range(x_b, [data_b[0]], 
+                xlabel='x:n', ylabel='y select 1', title='Data B',
+                legend=['Data-B select 0'])
+
+            x_start_b, x_end_b = round(x_start_b), round(x_end_b)
+
+            fig_obj = plt.figure()
+            plt.plot(range(len(x_a[x_start_a:x_end_a])), data_a[0][x_start_a:x_end_a], 'r')
+            plt.plot(range(len(x_b[x_start_b:x_end_b])), data_b[0][x_start_b:x_end_b], 'b')
+            plt.show()
+
+            if tkinter.messagebox.askyesno('提示', '是否确认截取范围'):
+                break
+
+        # print(x_start_a, x_end_a)
+        # print(x_start_b, x_end_b)
+        self.sub_frames['a_result'].vars['nrange'].set(f'{x_start_a},{x_end_a}')
+        self.sub_frames['b_result'].vars['nrange'].set(f'{x_start_b},{x_end_b}')
+
+
 
 if __name__ == '__main__':
 

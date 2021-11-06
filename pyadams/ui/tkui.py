@@ -470,7 +470,7 @@ class TkUi:
             radio = tk.Radiobutton(frame, text=text, variable=var, value=num+1)
             radio.pack(side='left', expand=tk.YES, fill=tk.X)
 
-        self.vars[params['frame']] = var
+        self.vars[params['var_name']] = var
 
     def get_text(self, name): # 多行文本数据读取
         """

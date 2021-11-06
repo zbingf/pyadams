@@ -770,7 +770,6 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None):
             plt.plot(xs, yline)        
             plt.xlabel(xlabel)
         plt.legend(legend)
-        print(111)
     else:
         plt.plot(xs, ys)
         plt.xlabel(xlabel)

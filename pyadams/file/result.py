@@ -1218,7 +1218,7 @@ class DataModelCompare(DataModelPlotAndPdf):
             obj.add_list_bullet('A : '+result['u_title'][loc], size=12)
             obj.add_list_bullet('B : '+result['l_title'][loc], size=12)
             obj.add_docx_figure(fig_paths['ts'][loc], f'时域图 {loc+1}', width=17)  # 时域图
-            obj.add_docx_figure(fig_paths['hz'][loc], f'频域图 {loc+1}', width=17)  # 频域图
+            obj.add_docx_figure(fig_paths['hz'][loc], f'PSD图 {loc+1}', width=17)  # 频域图
             obj.add_page_break()   # 另起一页
             
             obj.add_paragraph('设置:')  # 注释
@@ -1339,6 +1339,121 @@ class DataModelCompare(DataModelPlotAndPdf):
 
         return self.pdf_paths[result_key] 
 
+    def create_pdf_middle(self, result_key, params):
+        """
+            创建pdf文件
+
+            result_key : self.result_compare的key
+
+            params = {
+                'block_size': {'u':128, 'l':128},   # 频域计算块尺寸
+                'hz_range'  : [0, 50],              # 频域截取
+                'docx_path' : docx路径 str,          
+                'fig_path'  : 图像路径 str,
+                'str_input' : str,                  # 用于pdf创建时的额外输入, 可无
+            }
+        """
+
+        # ==============================
+        fig_paths = self.fig_paths[result_key]
+        result_compare = self.result_compare
+        result = result_compare[result_key]
+
+        block_size = params['block_size']
+        hz_range   = params['hz_range']
+        docx_path  = params['docx_path']
+        # ==============================
+
+        line_hz_set = '\tPSD 设置 :\n\t\thz_range [{},{}] ; block_size A:{} B:{}'
+        line_hz_set = line_hz_set.format(*hz_range, block_size['u'], block_size['l'])
+
+        obj = office_docx.DataDocx(docx_path)  # word编写
+        obj.set_page_margin(x=1.27, y=1.27)
+
+        self.str_pdf_title(obj, result)
+        obj.add_page_break()  # 另起一页     
+
+        line_title = 'A({}) vs. B({}) '
+        title = line_title.format(
+            os.path.basename(result['u_path']) + '|' + result['u_name'],
+            os.path.basename(result['l_path']) + '|' + result['l_name'])
+
+        obj.add_heading(title, level=0, size=20)
+
+        # ==============================
+        # 时间显示
+        str_time = time.strftime('%Y.%m.%d - %H:%M:%S', time.localtime(time.time()))
+        obj.add_paragraph('创建时间:' + str_time)  # 注释
+
+        # ==============================
+        # 额外输入
+        if 'str_input' in params:
+            obj.add_paragraph(params['str_input'])
+            obj.add_page_break()
+
+        # ==============================
+        # 数据对比
+        obj.add_heading('数据对比', level=1, size=15)
+
+        list_title = ['chantitle','pdi','max','min','rms']
+
+        # ==============================
+        # 汇总表格
+        list_compare = [
+            result['u_pdi_divide_l_pdi'],
+            result['u_max_divide_l_max'],
+            result['u_min_divide_l_min'],
+            result['u_rms_divide_l_rms'],
+        ]
+        list_compare = list2_change_rc(list_compare)
+        
+        for n, line in enumerate(list_compare):
+            line.insert(0, 'A:{}'.format(result['u_title'][n])) 
+
+        obj.add_table(f'相对比例-汇总 A/B', value2str_list2([list_title]+list_compare,3))
+        obj.add_page_break()
+
+
+        # ==============================
+        obj.add_paragraph('设置:')  # 注释
+        line_pdi_set = '\t{} :\n\t\tsamplerate 采样频率 {} Hz\n\t\tPDI设置: slope斜率 {} , intercept截距 {}'
+        obj.add_paragraph(
+            line_pdi_set.format('A File', result['u_samplerate'], result['u_slope'], result['u_intercept'])
+            )
+        obj.add_paragraph(
+            line_pdi_set.format('B File', result['l_samplerate'], result['l_slope'], result['l_intercept'])
+            )
+        obj.add_paragraph(line_hz_set)
+
+        for loc in range(len(result['u_title'])):
+            # 表格
+            list_0  = copy.deepcopy(list_title)
+            temp_list = [ list_0,
+                ['A'+result['u_title'][loc], result['u_pdi'][loc], result['u_max'][loc], result['u_min'][loc], result['u_rms'][loc]],
+                ['B'+result['l_title'][loc], result['l_pdi'][loc], result['l_max'][loc], result['l_min'][loc], result['l_rms'][loc]],
+            ]
+            obj.add_table(f'通道 {loc+1}', value2str_list2(temp_list, 3))
+
+        obj.add_page_break()  # 另起一页
+
+
+        # ==============================        
+        for loc in range(len(result['u_title'])):
+            
+            obj.add_list_bullet('A : '+result['u_title'][loc], size=12)
+            obj.add_list_bullet('B : '+result['l_title'][loc], size=12)
+            obj.add_docx_figure(fig_paths['ts'][loc], f'时域图 {loc+1}', width=17)  # 时域图
+            obj.add_docx_figure(fig_paths['hz'][loc], f'PSD图  {loc+1}', width=17)  # 频域图
+            if loc != (len(result['u_title'])-1):
+                obj.add_page_break()   # 另起一页
+
+        obj.save()
+
+        self.pdf_paths[result_key] = office_docx.doc2pdf(docx_path)
+        self.docx_paths[result_key] = docx_path
+
+        return self.pdf_paths[result_key]
+
     def run(self, name_u, name_l, params, pdfType=1):
         """
             运行生成pdf文件
@@ -1370,6 +1485,10 @@ class DataModelCompare(DataModelPlotAndPdf):
         elif pdfType == 2:
             self.create_figure_ts(result_key, params)
             pdf_path = self.create_pdf_ts(result_key, params)
+        elif pdfType == 3:
+            self.create_figure(result_key, params)
+            pdf_path = self.create_pdf_middle(result_key, params)
+
 
         return pdf_path
 
@@ -2060,6 +2179,32 @@ def test_DataModelCompare_2():
 
     return None
 
+def test_DataModelCompare_3():
+
+    params = {
+            'block_size': {'u':128, 'l':128},
+            'hz_range'  : [0, 50],
+            'docx_path' : r'..\tests\file_result\dmc_test.docx',
+            'fig_path'  : r'..\tests\file_result\dmc_test',
+        }
+    res_path = r'..\tests\file_result\break_brake.res'
+    data_obj = DataModel('test')
+    data_obj.new_file(res_path, 'res')
+    data_obj['res'].set_reqs_comps(
+        ['ACC_FL','ACC_FL','ACC_FL','ACC_FR','ACC_FR','ACC_FR'],
+        ['X','Y','Z','X','Y','Z'],
+        )
+    data_obj['res'].read_file()
+    dmc_obj = DataModelCompare(data_obj)
+    pdf_path = dmc_obj.run('res', 'res', params, pdfType=3)
+    print(pdf_path)
+    os.popen(pdf_path)
+    time.sleep(1)
+    dmc_obj.remove_result_files(dmc_obj.set_key('res', 'res'))
+
+    return None
+
+
 def test_DataModelPlot():
 
     params = {
@@ -2159,6 +2304,7 @@ if __name__ == '__main__':
 
     # test_DataModelCompare()
     # test_DataModelCompare_2()
+    test_DataModelCompare_3()
     # test_DataModelPlot()
-    test_DataModelPlot_2()
+    # test_DataModelPlot_2()
     # test_DataModelScatter()
