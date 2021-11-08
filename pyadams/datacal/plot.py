@@ -709,7 +709,8 @@ class FigPlotRealTime:
 # 左键定义开始, 右键定义结束, 中键确认结束
 # ======================================================================
 
-def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None):
+def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None,
+        x_start_init=None, x_end_init=None):
 
     # 图像交互, 通过鼠标左/右截取X范围
     class PlotDataMousePress2: # 数据存储
@@ -719,8 +720,11 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None):
         mouse_right_pointx = None
         mouse_x2 = [None, None]
         mouse_y2 = [None, None]
+        is_key_press = False
 
     def mouse_on_key_press(event): # 鼠标按键回调函数
+        
+        if not PlotDataMousePress2.is_key_press: return None
         # 按键
         x, y = event.xdata, event.ydata
 
@@ -756,11 +760,22 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None):
         else:
             str2 = 'End: None'
         
-        plt.title(title + '\n' + str1 + str2)
+        if x_start != None and x_end != None:
+            x_range = x_end - x_start
+            plt.title(title+'\n'+str1+str2+'\n'+f'range:{x_range:0.2f}')
+        else:
+            plt.title(title+'\n'+str1+str2)
+        
+        # plt.title(title + '\n' + str1 + str2)
         plt.close() if event.button==2 else plt.draw()
 
         return None
 
+    def key_press_event(event):
+        PlotDataMousePress2.is_key_press = True
+
+    def key_release_event(event):
+        PlotDataMousePress2.is_key_press = False
     
     # 图像设置
     fig = plt.figure()
@@ -775,8 +790,31 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
     
-    plt.title(title)
+    if x_start_init != None:
+        PlotDataMousePress2.mouse_x2[0] = float(x_start_init)
+        PlotDataMousePress2.mouse_left = plt.axvline(x=x_start_init, color='green', linestyle='--')
+        plt.draw()
+        str1 = f'Start: {x_start_init:0.2f}\n'
+    else:
+        str1 = 'Start: None'
+
+    if x_end_init != None:
+        PlotDataMousePress2.mouse_x2[1] = float(x_end_init)
+        PlotDataMousePress2.mouse_right = plt.axvline(x=x_end_init, color='blue', linestyle='--')
+        plt.draw()
+        str2 = f'End: {x_end_init:0.2f}'
+    else:
+        str2 = 'End: None'
+
+    if x_start_init != None and x_end_init != None:
+        x_range = x_end_init - x_start_init
+        plt.title(title+'\n'+str1+str2+'\n'+f'range:{x_range:0.2f}')
+    else:
+        plt.title(title+'\n'+str1+str2)
+
     fig.canvas.mpl_connect('button_press_event', mouse_on_key_press)
+    fig.canvas.mpl_connect('key_press_event', key_press_event)
+    fig.canvas.mpl_connect('key_release_event', key_release_event)
     plt.show()
 
     return PlotDataMousePress2.mouse_x2

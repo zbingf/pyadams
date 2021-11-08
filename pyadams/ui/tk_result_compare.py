@@ -168,17 +168,19 @@ class ResultCompareUi(tkui.TkUi):
         x_a = [value for value in range(len(data_a[0]))]
         x_b = [value for value in range(len(data_b[0]))]
 
+        x_start_a, x_end_a = None, None
+        x_start_b, x_end_b = None, None
         while True:
             x_start_a, x_end_a = plot.plot_get_x_range(x_a, [data_a[0]], 
                 xlabel='x:n', ylabel='y select 1', title='Data A',
-                legend=['Data-A select 0'])
-            x_start_a, x_end_a = round(x_start_a), round(x_end_a)
+                legend=['Data-A select 0'], x_start_init=x_start_a, x_end_init=x_end_a)
+            x_start_a, x_end_a = int(round(x_start_a)), int(round(x_end_a))
 
             x_start_b, x_end_b = plot.plot_get_x_range(x_b, [data_b[0]], 
                 xlabel='x:n', ylabel='y select 1', title='Data B',
-                legend=['Data-B select 0'])
+                legend=['Data-B select 0'], x_start_init=x_start_b, x_end_init=x_end_b)
 
-            x_start_b, x_end_b = round(x_start_b), round(x_end_b)
+            x_start_b, x_end_b = int(round(x_start_b)), int(round(x_end_b))
 
             fig_obj = plt.figure()
             plt.plot(range(len(x_a[x_start_a:x_end_a])), data_a[0][x_start_a:x_end_a], 'r')
