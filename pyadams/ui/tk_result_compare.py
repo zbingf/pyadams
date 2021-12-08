@@ -62,7 +62,7 @@ class ResultCompareUi(tkui.TkUi):
 
         self.frame_radiobuttons({
             'frame':'set_type', 'var_name':'pdfType',
-            'texts':['pdf-详细', 'pdf-简化', 'pdf-详细-2']
+            'texts':['pdf-详细', 'pdf-简化', 'pdf-详细-2', 'pdf-简化-2']
             })
 
         self.frame_buttons_RWR({
@@ -105,7 +105,7 @@ class ResultCompareUi(tkui.TkUi):
             'fig_path'  : values['current']['docx_path'][:-5],
             'nums'      : [3,2],
         }
-        print(values['current']['pdfType'])
+        # print(values['current']['pdfType'])
         self.print('开始对比-创建pdf文件')
         pdf_path = dmc_obj.run('a_result', 'b_result', params, pdfType=values['current']['pdfType'])
         

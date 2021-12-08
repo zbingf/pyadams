@@ -552,7 +552,7 @@ class FigPlotRealTime:
         self.legends   = {'ts':None, 'hz':None}
         self.ylabels   = {'ts':None, 'hz':None}
         self.xlabels   = {'ts':None, 'hz':None}
-        self.fig_paths = {'ts':[], 'hz':[]}
+        self.fig_paths = {'ts':[], 'hz':[], 'ts_Hz':[]}
 
     def set_figure(self, size_gain=0.6, nums=None, dpi=500, figsize='16:9'):
 
@@ -699,6 +699,73 @@ class FigPlotRealTime:
             plt.close()
 
         return None
+
+    def plot_ts_hz(self, list3d_y, list3d_x, samplerates, block_sizes, hz_range=None, linetypes=None, linewidth=1):
+        nums    = self.nums
+        if linetypes == None:
+            linetypes = ['b', 'r--']
+
+        num_plot = nums[0]
+        len_rpc = len(list3d_y[0])
+        num_fig = math.ceil(len_rpc/num_plot) # figure 个数
+
+        fig_loc = 0
+        for n in range(num_fig):
+            path = self.fig_path + f'_tsHz_{n}.png'
+            self.fig_paths['ts_Hz'].append(path)
+
+            # path = self.fig_path + f'_hz_{n}.png'
+            # self.fig_paths['hz'].append(path)
+
+            fig_obj = plt.figure()
+
+            for loc in range(num_plot):
+                nloc = loc + n*num_plot
+                if nloc >= len_rpc:
+                    break
+
+                ax1 = fig_obj.add_subplot(nums[0], 2, 2*loc+1)
+                ax2 = fig_obj.add_subplot(nums[0], 2, 2*loc+2)
+                
+                # 时域数据
+                for list2d_y, list2d_x, linetype in zip(list3d_y, list3d_x, linetypes):
+                    
+                    ax1.plot(list2d_x[nloc], list2d_y[nloc], linetype, linewidth=linewidth)
+                
+                ax1.legend(self.legends['ts'])
+                ax1.set_ylabel(self.ylabels['ts'][fig_loc])
+                if isinstance(self.xlabels['ts'], list):
+                    ax1.set_xlabel(self.xlabels['ts'][fig_loc])
+                else:
+                    ax1.set_xlabel(self.xlabels['ts'])
+
+                # 频域数据
+                for list2d_y, samplerate, block_size, linetype in zip(list3d_y, samplerates, block_sizes, linetypes):
+
+                    psd_hz, psd_y = freqcal.psd(list2d_y[nloc], samplerate, nperseg=block_size)
+                    
+                    if hz_range != None:
+                        psd_hz, psd_y = np.array(psd_hz), np.array(psd_y)
+                        arr_loc = array_range(psd_hz, hz_range)
+                        psd_hz, psd_y = psd_hz[arr_loc], psd_y[arr_loc]
+
+                    ax2.plot(psd_hz, psd_y, linetype, linewidth=linewidth, alpha=1)
+
+                ax2.legend(self.legends['hz'])
+                ax2.set_ylabel(self.ylabels['hz'][fig_loc])
+                if isinstance(self.xlabels['hz'], list):
+                    ax2.set_xlabel(self.xlabels['hz'][fig_loc])
+                else:
+                    ax2.set_xlabel(self.xlabels['hz'])
+
+
+                fig_loc += 1
+
+            fig_obj.tight_layout()
+            fig_obj.savefig(path)
+            plt.close()
+        return None
+
 
 
 # ======================================================================

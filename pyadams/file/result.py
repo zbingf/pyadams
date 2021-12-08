@@ -4,6 +4,7 @@ from pyadams.file import file_edit, office_docx
 
 import re, math, sys, os, struct, abc, copy, time
 import logging, os.path
+import pprint
 
 # ==============================
 # logging日志配置
@@ -179,6 +180,7 @@ class ResFile(ReusltData):
                 data.append(data_n)
             if '</analysis>' in line:
                 break
+            if not line : break
         fileid.close()
 
         self._requestId = self.data_title_parse(data_str)
@@ -219,6 +221,7 @@ class ResFile(ReusltData):
                 break
             if '</analysis>' in line:
                 break
+            if not line : break
         f.close()
 
         simTime = []
@@ -1454,7 +1457,7 @@ class DataModelCompare(DataModelPlotAndPdf):
 
         return self.pdf_paths[result_key]
 
-    def run(self, name_u, name_l, params, pdfType=1):
+    def run(self, name_u, name_l, params, pdfType=1): # new-20211208
         """
             运行生成pdf文件
 
@@ -1488,7 +1491,11 @@ class DataModelCompare(DataModelPlotAndPdf):
         elif pdfType == 3:
             self.create_figure(result_key, params)
             pdf_path = self.create_pdf_middle(result_key, params)
-
+            # self.create_figure_ts_hz(result_key, params)
+            # pdf_path = self.create_pdf_ts_hz(result_key, params)  
+        elif pdfType == 4:
+            self.create_figure_ts_hz(result_key, params)
+            pdf_path = self.create_pdf_ts_hz(result_key, params)  
 
         return pdf_path
 
@@ -1514,6 +1521,159 @@ class DataModelCompare(DataModelPlotAndPdf):
         docx_obj.add_list_bullet('自动生成', size=15)
 
         return None        
+
+    def create_figure_ts_hz(self, result_key, params): # new-20211208
+        """
+            
+        """
+        # ==============================
+        result_compare = self.result_compare
+        result = result_compare[result_key]
+        block_size = params['block_size']
+        hz_range = params['hz_range']
+        fig_path = params['fig_path']
+        nums     = params['nums']
+        nums[1]  = 2
+        # ==============================
+        
+        # 图像生成
+        fig_obj = plot.FigPlotRealTime(fig_path)
+        size = 16
+        figsize = '{}:{}'.format(size, size/nums[1]*nums[0]*0.65)
+        fig_obj.set_figure(nums=nums, figsize=figsize)
+
+        fig_obj.set_legend([result['u_name'], result['l_name']], 'ts')
+        fig_obj.set_legend([result['u_name'], result['l_name']], 'hz')
+        fig_obj.set_ylabel(result['u_title'], 'ts')
+        fig_obj.set_ylabel(result['u_title'], 'hz')
+        fig_obj.set_xlabel('time(s)', 'ts')
+        fig_obj.set_xlabel('Hz', 'hz')
+
+        time_line_u  = [ n / result['u_samplerate'] for n in range(len(result['data_u'][0])) ]
+        time_line_us = [time_line_u] * len(result['data_u'])
+
+        time_line_l  = [ n / result['l_samplerate'] for n in range(len(result['data_l'][0])) ]
+        time_line_ls = [time_line_l] * len(result['data_l'])
+
+
+        fig_obj.plot_ts_hz(
+            [result['data_u'], result['data_l']], 
+            [time_line_us, time_line_ls], 
+            samplerates=[result['u_samplerate'], result['l_samplerate']], 
+            block_sizes=[block_size['u'], block_size['l']], 
+            hz_range=hz_range, 
+            linetypes=['b', 'r--'])
+
+        fig_paths = fig_obj.fig_paths
+
+        # ==============================
+        self.fig_paths[result_key] = fig_paths
+        # ==============================
+
+        return fig_paths
+
+    def create_pdf_ts_hz(self, result_key, params): # new-20211208
+        """
+            创建pdf文件
+
+            result_key : self.result_compare的key
+
+            params = {
+                'block_size': {'u':128, 'l':128},   # 频域计算块尺寸
+                'hz_range'  : [0, 50],              # 频域截取
+                'docx_path' : docx路径 str,          
+                'fig_path'  : 图像路径 str,
+                'str_input' : str,                  # 用于pdf创建时的额外输入, 可无
+                'nums'      : [int,int]             # 图片排列
+            }
+        """
+
+        # ==============================
+        fig_paths = self.fig_paths[result_key]
+        result_compare = self.result_compare
+        result = result_compare[result_key]
+
+        block_size = params['block_size']
+        hz_range   = params['hz_range']
+        docx_path  = params['docx_path']
+        nums           = params['nums']
+        nums[1]  = 1
+        # ==============================
+        obj = office_docx.DataDocx(docx_path)  # word编写
+        obj.set_page_margin(x=1.27, y=1.27)
+
+        self.str_pdf_title(obj, result)
+        obj.add_page_break()  # 另起一页     
+
+        line_title = 'A({}) vs. B({}) '
+        title = line_title.format(
+            os.path.basename(result['u_path']) + '|' + result['u_name'],
+            os.path.basename(result['l_path']) + '|' + result['l_name'])
+
+        obj.add_heading(title, level=0, size=20)
+        # ==============================
+        # 时间显示
+        str_time = time.strftime('%Y.%m.%d - %H:%M:%S', time.localtime(time.time()))
+        obj.add_paragraph('创建时间:' + str_time)  # 注释
+        # ==============================
+        # 额外输入
+        if 'str_input' in params:
+            obj.add_paragraph(params['str_input'])
+            obj.add_page_break()
+        # ==============================
+        # 数据对比
+        obj.add_heading('数据对比', level=1, size=15)
+        list_title = ['chantitle','pdi','max','min','rms']
+        # ==============================
+        # 汇总表格
+        list_compare = [
+            result['u_pdi_divide_l_pdi'],
+            result['u_max_divide_l_max'],
+            result['u_min_divide_l_min'],
+            result['u_rms_divide_l_rms'],
+        ]
+        list_compare = list2_change_rc(list_compare)
+        
+        for n, line in enumerate(list_compare):
+            line.insert(0, 'A:{}'.format(result['u_title'][n])) 
+
+        obj.add_table(f'相对比例-汇总 A/B', value2str_list2([list_title]+list_compare,3))
+        obj.add_page_break()
+        # ==============================
+        n_axis   = 1
+        max_axis = nums[0] * nums[1]
+        for loc in range(len(result['u_title'])):
+            a_str = f'{n_axis} A : '+result['u_title'][loc]
+            # b_str = f'{n_axis} B : '+result['l_title'][loc]
+            b_str = 'B : '+result['l_title'][loc]
+            obj.add_list_bullet(a_str + ' ; '+  b_str, size=10)
+            # obj.add_list_bullet(, size=10)
+            fig_loc, temp_n = divmod(loc, max_axis)
+            n_axis += 1
+            if temp_n == max_axis-1:
+                obj.add_docx_figure(fig_paths['ts_Hz'][fig_loc], f'时域&PSD图 {fig_loc+1}', width=18)  # 时域图
+                obj.add_page_break()   # 另起一页
+                n_axis = 1
+        if temp_n != max_axis-1:
+            obj.add_docx_figure(fig_paths['ts_Hz'][fig_loc], f'时域&PSD图 {fig_loc+1}', width=18)  # 时域图
+
+        temp_dic = {
+            'samplerate'  : [result['u_samplerate'], result['l_samplerate']], 
+            'block_sizes' : [block_size['u'], block_size['l']], 
+            'hz_range'    : hz_range, 
+        }
+        str_params = pprint.pformat(temp_dic)
+        str_params = str_params.replace('\\n', '')
+        str_params = str_params.replace('\'', '')
+        str_params = re.sub('\n\s+\n', '\n', str_params)
+        obj.add_paragraph('参数设置:\n' + str_params)  # 注释
+
+        obj.save()
+
+        self.pdf_paths[result_key] = office_docx.doc2pdf(docx_path)
+        self.docx_paths[result_key] = docx_path
+
+        return self.pdf_paths[result_key] 
 
 
 class DataModelPlot(DataModelPlotAndPdf):
@@ -1620,6 +1780,42 @@ class DataModelPlot(DataModelPlotAndPdf):
         time_lines = [time_line] * len(result['data'])
 
         fig_obj.plot_ts([result['data']], [time_lines], linetypes=['b'])
+
+        fig_paths = fig_obj.fig_paths
+        # ==============================
+        self.fig_paths[name] = fig_paths
+        # ==============================
+        return fig_paths
+
+    def create_figure_ts_hz(self, name, params): # new-20211208
+        """
+            
+        """
+        # ==============================
+        result     = self.results[name]
+        block_size = params['block_size']
+        hz_range   = params['hz_range']
+        fig_path   = params['fig_path']
+        nums       = params['nums']
+        # ==============================
+        
+        # 图像生成
+        fig_obj = plot.FigPlotRealTime(fig_path)  # 即时生成图像数据,减少内存占用
+        fig_size = 16
+        figsize = '{}:{}'.format(fig_size, fig_size/2*nums[0]*0.65)
+        fig_obj.set_figure(nums=nums, figsize=figsize)
+        fig_obj.set_legend([result['name']], 'ts')
+        fig_obj.set_legend([result['name']], 'hz')
+        fig_obj.set_ylabel(result['title'], 'ts')
+        fig_obj.set_ylabel(result['title'], 'hz')
+        fig_obj.set_xlabel('time(s)', 'ts')
+        fig_obj.set_xlabel('Hz', 'hz')
+
+        time_line  = [ n / result['samplerate'] for n in range(len(result['data'][0])) ]
+        time_lines = [time_line] * len(result['data'])
+
+        fig_obj.plot_ts_hz([result['data']], [time_lines], samplerates=[result['samplerate']], 
+            block_sizes=[block_size], hz_range=hz_range, linetypes=['b'])
 
         fig_paths = fig_obj.fig_paths
         # ==============================
@@ -1764,7 +1960,57 @@ class DataModelPlot(DataModelPlotAndPdf):
 
         return self.pdf_paths[result_key]
 
-    def run(self, name, params, pdfType=1):
+    def create_pdf_ts_hz(self, name, params): # new-20211208
+        # ==============================
+        result_key = self.set_key(name)
+        fig_paths = self.fig_paths[result_key]
+        result = self.results[result_key]
+        
+        block_size = params['block_size']
+        hz_range   = params['hz_range']
+        docx_path  = params['docx_path']
+        nums       = params['nums']
+        # ==============================
+        obj = office_docx.DataDocx(docx_path)  # word编写
+        obj.set_page_margin(x=1.27, y=1.27)
+        line_title = 'A({})'
+        title = line_title.format(os.path.basename(result['path'])+'|'+result['name'])
+
+        obj.add_heading(title, level=0, size=20)
+        obj.add_heading('数据对比', level=1, size=15)
+
+        list_title = ['chantitle','max','min','rms']
+        # ==============================
+        # 汇总表格
+        list_compare = [result['max'], result['min'], result['rms'],]
+        list_compare = list2_change_rc(list_compare)
+        for n, line in enumerate(list_compare):
+            line.insert(0, result['title'][n])
+
+        obj.add_table(f'汇总', value2str_list2([list_title]+list_compare,3))
+        obj.add_page_break()
+        # ==============================
+        n_axis   = 1
+        max_axis = nums[0] * 2
+        for loc in range(len(result['title'])):
+            obj.add_list_bullet(f'{n_axis} fig : '+result['title'][loc], size=10)
+            fig_loc, temp_n = divmod(loc, max_axis)
+            n_axis += 1
+            if temp_n == max_axis-1:
+                obj.add_docx_figure(fig_paths['ts_Hz'][fig_loc], f'时域&PSD图 {fig_loc+1}', width=18)  # 时域图
+                obj.add_page_break()   # 另起一页
+                n_axis = 1
+        if temp_n != max_axis-1:
+            obj.add_docx_figure(fig_paths['ts_Hz'][fig_loc], f'时域&PSD图 {fig_loc+1}', width=18)  # 时域图
+
+        obj.save()
+
+        self.pdf_paths[result_key] = office_docx.doc2pdf(docx_path)
+        self.docx_paths[result_key] = docx_path
+
+        return self.pdf_paths[result_key]
+
+    def run(self, name, params, pdfType=1): # new-20211208
         """
             params = {
                 'block_size': 1024,
@@ -1782,6 +2028,12 @@ class DataModelPlot(DataModelPlotAndPdf):
         elif pdfType == 2:
             self.create_figure_ts(name, params)
             pdf_path = self.create_pdf_ts(name, params)
+            # self.create_figure_ts_hz(name, params)
+            # pdf_path = self.create_pdf_ts_hz(name, params)       
+            
+        elif pdfType == 3:
+            self.create_figure_ts_hz(name, params)
+            pdf_path = self.create_pdf_ts_hz(name, params)       
 
         return pdf_path
 
