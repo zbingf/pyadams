@@ -845,21 +845,21 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None,
         PlotDataMousePress2.is_key_press = False
     
     # 图像设置
-    fig = plt.figure()
-
+    fig = plt.figure('plot_get_x_range', clear=True)
+    ax1 = fig.add_subplot(1,1,1)
     if isinstance(ys[0], list):
         for yline in ys:
-            plt.plot(xs, yline)        
+            ax1.plot(xs, yline)        
             plt.xlabel(xlabel)
         plt.legend(legend)
     else:
-        plt.plot(xs, ys)
+        ax1.plot(xs, ys)
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
     
     if x_start_init != None:
         PlotDataMousePress2.mouse_x2[0] = float(x_start_init)
-        PlotDataMousePress2.mouse_left = plt.axvline(x=x_start_init, color='green', linestyle='--')
+        PlotDataMousePress2.mouse_left = ax1.axvline(x=x_start_init, color='green', linestyle='--')
         plt.draw()
         str1 = f'Start: {x_start_init:0.2f}\n'
     else:
@@ -867,7 +867,7 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None,
 
     if x_end_init != None:
         PlotDataMousePress2.mouse_x2[1] = float(x_end_init)
-        PlotDataMousePress2.mouse_right = plt.axvline(x=x_end_init, color='blue', linestyle='--')
+        PlotDataMousePress2.mouse_right = ax1.axvline(x=x_end_init, color='blue', linestyle='--')
         plt.draw()
         str2 = f'End: {x_end_init:0.2f}'
     else:
@@ -883,6 +883,7 @@ def plot_get_x_range(xs, ys, xlabel=None, ylabel=None, title=None, legend=None,
     fig.canvas.mpl_connect('key_press_event', key_press_event)
     fig.canvas.mpl_connect('key_release_event', key_release_event)
     plt.show()
+    fig.delaxes(ax1)
 
     return PlotDataMousePress2.mouse_x2
 

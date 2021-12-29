@@ -87,7 +87,7 @@ def get_tilt_result_data(res_path): # 读取数据
     return table_angle, left_res, right_res  # 单位 deg, kg
 
 
-def get_tilt_side(left_res, right_res):
+def get_tilt_side(table_angle, left_res, right_res):
     """
         left_res = {'req':[],'comp':[],'data':[]}
         right_res = {'req':[],'comp':[],'data':[]}
@@ -98,7 +98,7 @@ def get_tilt_side(left_res, right_res):
         value_start += line[0]
         value_end   += line[-1]
 
-    if value_start-value_end > 0:
+    if math.cos(max(table_angle)*math.pi/180)*value_start-value_end > 0:
         # 右翻转
         tilt_direction = RIGHT
         ourter_res = left_res
@@ -255,7 +255,7 @@ def cal_tilt(res_path, target_angles): # 主计算函数
     res_path = os.path.abspath(res_path)
 
     table_angle, left_res, right_res = get_tilt_result_data(res_path)
-    tilt_direction, ourter_res, inner_res = get_tilt_side(left_res, right_res)
+    tilt_direction, ourter_res, inner_res = get_tilt_side(table_angle, left_res, right_res)
     locs = get_table_angle_loc(table_angle, target_angles)
     target_keys, target_res = get_target_res(table_angle, ourter_res, locs)
 

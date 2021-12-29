@@ -5,10 +5,8 @@
 """
 from pyadams.ui import tkui
 from pyadams.car import adm_sim
-from pyadams.call import admrun, threadingrun
+# from pyadams.call import admrun, threadingrun
 from pyadams.file import result, file_edit, adm_post_edit
-
-
 DataModel = result.DataModel
 
 import re
@@ -24,6 +22,10 @@ AdmSimUi        = tkui.AdmSimUi
 PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
 LOG_PATH = PY_FILE_NAME+'.log'
 logger = logging.getLogger(PY_FILE_NAME)
+
+
+# =========================================
+# =========================================
 
 
 class AdmSimCalCarPostUi(TkUi):

@@ -201,7 +201,7 @@ class AdmSimCalUi(TkUi):
         # ========================= 默认设置
         data_model_name = 'multi_adm_result'
         max_threading   = 4
-        simlimit        = 60
+        simlimit        = 300      # 计算时常监测, 300分钟
         # =========================
         
         # spline 加载

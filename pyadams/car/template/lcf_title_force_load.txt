@@ -1,0 +1,44 @@
+$---------------------------------------------------------------------MDI_HEADER
+[MDI_HEADER]
+ FILE_TYPE     =  'lcf'
+ FILE_VERSION  =  6.0
+ FILE_FORMAT   =  'ascii'
+(COMMENTS)
+{comment_string}
+'Loadcase type -- Static Load'
+$--------------------------------------------------------------------------UNITS
+[UNITS]
+ LENGTH  =  'mm'
+ FORCE   =  'newton'
+ ANGLE   =  'deg'
+ MASS    =  'kg'
+ TIME    =  'sec'
+$---------------------------------------------------------------------------MODE
+[MODE]
+ STEERING_MODE  =  'angle'
+ VERTICAL_MODE_FOR_SETUP  =  'contact_patch_height'
+ VERTICAL_MODE  =  'wheel_vertical_force'
+ COORDINATE_SYSTEM  =  'vehicle'
+$---------------------------------------------------------------------------DATA
+[DATA]
+$COLUMN:  input type:  type of input data:                    side:
+$ (c1)     wheel z         disp / force                          left
+$ (c2)     wheel z         disp / force                          right
+$ (c3)     lateral         force (y)                             left
+$ (c4)     lateral         force (y)                             right
+$ (c5)     damage_radius   disp                                  left
+$ (c6)     damage_radius   disp                                  right
+$ (c7)     damage_force    force                                 left
+$ (c8)     damage_force    force                                 right
+$ (c9)     aligning        torque (z-axis)                       left
+$ (c10)    aligning        torque (z-axis)                       right
+$ (c11)    brake           force (y)                             left
+$ (c12)    brake           force (y)                             right
+$ (c13)    driving         force (y)                             left
+$ (c14)    driving         force (y)                             right
+$ (c15)    otm             torque (z-axis)                       left
+$ (c16)    otm             torque (z-axis)                       right
+$ (c17)    roll res        torque (z-axis)                       left
+$ (c18)    roll res        torque (z-axis)                       right
+$ (c19)    steering        force / steer angle / rack travel
+{ whl_z_l      whl_z_r        lat_l        lat_r      dam_rad_l      dam_rad_r      dam_for_l      dam_for_r      align_l      align_r      brake_l      brake_r      drive_l      drive_r      otm_l      otm_r      rollres_l      rollres_r        steer}

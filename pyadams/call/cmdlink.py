@@ -103,11 +103,15 @@ def is_sim_success(res_path, sim_minute):
 
 
 # 运行bat进行计算
-def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE):
+def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE, true_res_path=None):
     """
         subprocess.Popen 运行bat_path
         通过cmdlink.is_sim_success进行判定是否计算完成
+        
+        res_path 实际上用于.msg的查找(一般.res与.msg文件名一致)
+        true_res_path 实际res路径(用于.res与.msg文件名不一致的情况)
     """
+    if true_res_path==None: true_res_path = res_path
 
     msg_path = res_path[0:-3]+r'msg'
     try:
@@ -115,8 +119,12 @@ def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE):
     except:
         pass
 
-    proc = subprocess.Popen(bat_path)
+    run_dir = os.path.dirname(res_path)
+    proc = subprocess.Popen(bat_path, cwd=run_dir)
+
     main_pid = proc.pid
+    logger.info(f"bat_path: {bat_path}" + f"运行路径: {run_dir}; " + f"main_pid: {main_pid}")
+
     try:
         # 判定是否运行完毕，并结束进程
         if is_sim_success(res_path, simlimit):
@@ -134,6 +142,14 @@ def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE):
                     p_chr.kill()    
                 proc.kill()
                 logger.info(f'进程（id: {main_pid}）及子程序结束')
+
+                # 2021.12.29新增 
+                # 2017.1 ADAMS view
+                aview_ids = search_target_log_ana_id(true_res_path)
+                for aview_id in aview_ids:
+                    kill_pid(aview_id)
+                    logger.info(f'进程（aview_id: {aview_id}）结束')
+
             except:
                 logger.info('进程本身已经终止,返回res_path')
                 return res_path
@@ -147,7 +163,8 @@ def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE):
 
 
 # 调用adams模型 运行cmd文件
-def cmd_file_send(cmd_path=None, mode='car', res_path=None, minutes=30): 
+def cmd_file_send(cmd_path=None, mode='car', 
+        res_path=None, minutes=30, true_res_path=None): 
     """
         cmd文件发送
         mode 计算模式选择： 'car' 'view' ；默认'car'
@@ -160,18 +177,25 @@ def cmd_file_send(cmd_path=None, mode='car', res_path=None, minutes=30):
         'view': 'aview'}
 
     if cmd_path == None: # 不运行cmd文件 测试用
-        cmds = bat_path+f' {mode_dict[mode.lower()]} ru-st b exit'
+        cmds = f'"{bat_path}" {mode_dict[mode.lower()]} ru-st b exit'
         subprocess.call(cmds)
         return False
     else:
         if os.path.exists(cmd_path):
+            cmd_path = os.path.abspath(cmd_path)
             # 文件存在
-            cmds = bat_path+f' {mode_dict[mode.lower()]} ru-st b '+str(cmd_path)+' exit'
+            cmds = f'"{bat_path}" {mode_dict[mode.lower()]} ru-st b "'+str(cmd_path)+'" exit'
             if res_path == None:
+                # res路径不存在
                 subprocess.call(cmds)
             else:
                 # res路径存在
-                call_bat_sim(cmds, res_path, simlimit=SIM_LIMIT_MINUTE)
+                # 创建bat_path 并通过 call_bat_sim 调用计算
+                # 2021.12.29
+                cmd_bat_path = cmd_path[:-3]+'bat'
+                with open(cmd_bat_path, 'w') as f: f.write(cmds)
+                call_bat_sim(cmd_bat_path, res_path, simlimit=SIM_LIMIT_MINUTE, true_res_path=true_res_path)
+
             return True
         else:
             logger.error(f"文件不存在: {cmd_path}")
@@ -179,7 +203,9 @@ def cmd_file_send(cmd_path=None, mode='car', res_path=None, minutes=30):
 
 
 # 调用并运行cmd命令
-def cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, minutes=30): 
+def cmd_send(cmds, cmd_path=None, mode='car', 
+        savefile=False, res_path=None, 
+        minutes=30, true_res_path=None): 
     """
         cmds 命令行 字符串或列表格式
         cmd_path 目标存储文件路径
@@ -188,7 +214,9 @@ def cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, min
         minutes 分析时长（分钟）限制 默认10分钟关闭
     """
     if cmd_path==None:
-        cmd_path=os.getcwd()+'\\'+'temp.cmd'
+        cmd_path = os.path.join(os.getcwd(), 'temp.cmd')
+        # cmd_path=os.getcwd()+'\\'+'temp.cmd'
+
     with open(cmd_path,'w') as f:
         if isinstance(cmds,list):
             for line in cmds:
@@ -196,7 +224,8 @@ def cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, min
         else:
             f.write(cmds)
     
-    if cmd_file_send(cmd_path=cmd_path, mode=mode, res_path=res_path, minutes=minutes):
+    if cmd_file_send(cmd_path=cmd_path, mode=mode, res_path=res_path, 
+            minutes=minutes, true_res_path=true_res_path):
         if not savefile:
             # 不保存cmd文件
             os.remove(cmd_path)
@@ -214,6 +243,62 @@ def test_cmd_send():
     cmd_path = os.path.abspath(r'..\tests\call_cmdlink\test_view.cmd')
     os.chdir(os.path.dirname(cmd_path))
     cmd_send(f'file command read file_name="{cmd_path}"',mode='view')
+
+
+
+def search_log_ana(res_path):
+
+    target_dir = os.path.dirname(res_path)
+    log_paths = []
+    for file_name in os.listdir(target_dir):
+        # log文件
+        if re.match('view_ana_\d+\.log', file_name.lower()):
+            file_path = os.path.join(target_dir, file_name)
+            log_paths.append(file_path)
+
+    return log_paths
+
+
+
+def search_target_log_ana_id(res_path):
+
+    target_paths = []
+    log_paths = search_log_ana(res_path)
+    res_name = os.path.basename(res_path)[:-4].lower()
+    for log_path in log_paths:
+        with open(log_path, 'r') as f:
+            log_str = f.read().lower()
+
+        if re.search('\sout={}\s'.format(res_name), log_str):
+            target_paths.append(log_path)
+            # print(log_path)
+
+    target_ids = []
+    for target_path in target_paths:
+        target_id = int(re.match('.*view_ana_(\d+)\.log', target_path.lower()).group(1))
+
+        if is_pid_exist(target_id) and \
+            get_pid_name(target_id)=='aview.exe':
+            
+            target_ids.append(target_id)
+
+    return target_ids
+
+# 获取进程ID
+def is_pid_exist(p_id):
+
+    if p_id in psutil.pids():
+        return True
+    else:
+        return False
+
+# 根据进程ID获取进程名称
+def get_pid_name(p_id):
+    return psutil.Process(p_id).name()
+
+def kill_pid(p_id):
+    return psutil.Process(p_id).kill()
+
 
 
 

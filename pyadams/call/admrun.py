@@ -63,6 +63,7 @@ class AcfFile:
         with open(self.filepath[:-3]+'acf','w') as f:
             f.write('\n'.join(strlist))
 
+
 def admrun(adm_path,simtime,samplerate,simlimit=SIM_LIMIT_MINUTE,version='2017.2'):
     """
         adm 运行
@@ -98,6 +99,7 @@ def admrun(adm_path,simtime,samplerate,simlimit=SIM_LIMIT_MINUTE,version='2017.2
 
     return cmdlink.call_bat_sim(bat_path, res_path, simlimit=simlimit)
 
+
 def admrun_car(adm_path, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
     """
         car模块的adm文件运行
@@ -131,6 +133,7 @@ def admrun_car(adm_path, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
     res_path = adm_path[:-3]+'res'
 
     return cmdlink.call_bat_sim(bat_path, res_path, simlimit=simlimit)
+
 
 def admrun_car_sus(adm_path, simtime, step, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
     """
@@ -178,7 +181,10 @@ def admrun_car_sus(adm_path, simtime, step, version='2017.2', simlimit=SIM_LIMIT
 
     return cmdlink.call_bat_sim(bat_path, res_path, simlimit=simlimit)
 
+
 # ==============================================
+# ==============================================
+# 测试模块
 
 def test_admrun():
 

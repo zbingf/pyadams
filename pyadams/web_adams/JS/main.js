@@ -2,8 +2,6 @@
 var display=String("log") //返回显示ID
 
 
-
-
 // 异步
 function InfoGet_true(dataSend,functionName) //发送文档，运行functionName
 {
@@ -28,6 +26,7 @@ function InfoGet_true(dataSend,functionName) //发送文档，运行functionName
 		}
 	}
 }
+
 // 同步
 function InfoGet_false(dataSend,functionName)
 {
@@ -45,6 +44,7 @@ function InfoGet_false(dataSend,functionName)
 	functionName(xmlhttp.responseText)
 	return xmlhttp.responseText
 }
+
 function funGetSelect(strId)
 {
 	obj=document.getElementById(strId);
@@ -52,6 +52,7 @@ function funGetSelect(strId)
 	data=obj.options[index].value;
 	return data
 }
+
 function funEmpty(){}
 // ————————————————————————————————————————————————————————————————————————————————————————————————————————
 // ————————————————————————————————————————————————————————————————————————————————————————————————————————
@@ -66,6 +67,7 @@ function funCurrent() //当前界面
 	document.getElementById("currentModel").value=InfoGet_false(buttonCurrentSend,funEmpty);
 }
 
+
 // 按钮 更新全部 回调
 function funUpdataAll()
 {
@@ -76,6 +78,8 @@ function funUpdataAll()
 	// document.getElementById("cdb").value=""
 	// document.getElementById("cdbNames").innerHTML="<option>Detroit Lions</option><option>Detroit Pistons</option>"
 }
+
+
 function funCdbNames()
 {
 	dataStr="model funCdbNames ";
@@ -87,6 +91,8 @@ function funCdbNames()
 	}
 	InfoGet_false(dataStr,subFun)
 }
+
+
 function funAsyName()
 {
 	dataStr="model funAsyNames ";
@@ -99,6 +105,8 @@ function funAsyName()
 	}
 	InfoGet_false(dataStr,subFun);
 }
+
+
 // 设置当前界面
 function funChangeCurrent()
 {
@@ -114,6 +122,8 @@ function funChangeCurrent()
 	funGetCurrentAsy();
 	funCurrent();
 }
+
+
 // 当前已打开文件
 function funGetCurrentAsy()
 {
@@ -126,6 +136,8 @@ function funGetCurrentAsy()
 	}
 	InfoGet_false(dataStr,subFun)
 }
+
+
 // 关闭asy装配文件
 function funCloseAsy()
 {
@@ -139,6 +151,7 @@ function funCloseAsy()
 // ————————————————————————————————————————————————————————————————————————————————————————————————————————
 // ————————————————————————————————————————————————————————————————————————————————————————————————————————
 // 仿真按钮调用按键
+
 
 // 按钮 运行cmd 回调
 function funCmdInput()
@@ -183,6 +196,8 @@ function funSpringPreload()
 	InfoGet_true(dataStr,subFun)
 	// alert("运行整车预载调整完毕")
 }
+
+
 // 转向行程计算按钮
 function funSteerTravel()
 {
@@ -208,6 +223,8 @@ function funSteerTravel()
 	InfoGet_true(dataStr,subFun)
 	// alert("转向行程校正完成")
 }
+
+
 // 轮跳行程
 function funWheelTravel()
 {
@@ -234,6 +251,7 @@ function funWheelTravel()
 	alert("轮跳行程校正完成")
 }
 
+
 function funMassAdjust()
 {
 	funUpdataAll()
@@ -257,6 +275,7 @@ function funMassAdjust()
 	// alert("整车质量调整完毕")
 }
 
+
 function funHardpointAdjust()
 {
 	hardpointName=document.getElementById("hardpointName").value
@@ -271,7 +290,6 @@ function funHardpointAdjust()
 	}
 	InfoGet_true(dataStr,subFun)
 }
-
 
 
 function funDesignSim()

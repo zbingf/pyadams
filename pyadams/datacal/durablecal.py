@@ -1,5 +1,5 @@
 """
-# 耐久相关计算
+	耐久相关计算模块
 """
 
 
@@ -19,7 +19,7 @@ def rainflow_3point(list1):
 		输出: 幅值, 平均值
 	"""
 	
-	newlist = list_updown(list1)
+	newlist = _list_updown(list1)
 	num = len(newlist)
 	# print(newlist)
 	# print('len(newlist)',len(newlist))
@@ -33,7 +33,7 @@ def rainflow_3point(list1):
 	l1 = newlist[value_loc:] + newlist[:value_loc+1]
 
 	# 再只留波峰波谷，防止拼接出现不合理的数据
-	newlist = list_updown(l1)
+	newlist = _list_updown(l1)
 	# print('len(newlist)',len(newlist))
 
 	# ---------检测数据用---------
@@ -82,7 +82,7 @@ def rainflow_3point(list1):
 		if last_num == num : # 如果计算一轮后数据长度无变化
 			# print(newlist)
 			# 波峰波谷重新排列
-			newlist = list_updown(newlist)
+			newlist = _list_updown(newlist)
 			# print(len(newlist),newlist)
 
 		# print(num)
@@ -98,7 +98,7 @@ def rainflow_3point(list1):
 	return values,means # 应力幅，均值 # 一维数组 雨流计数
 
 # 雨流计数子函数
-def list_updown(list1):
+def _list_updown(list1):
 	"""
 		对载荷时间历程进行处理使它只包含峰谷峰谷交替出现
 	"""
@@ -141,10 +141,11 @@ def cal_goodman(values, means, sigma_b):
 	"""
 	return [(a*sigma_b)/(sigma_b-abs(m)) for a,m in zip(values,means) ]
 
+
+
 # ==============================
 # 未-完成
 # ==============================
-
 
 def fun_4point(list1):
 	num = len(list1)
@@ -160,6 +161,7 @@ def fun_4point(list1):
 			continue
 	print(s)
 	return s # 未完成
+
 
 def rainflow_4point(list1):
 	"""

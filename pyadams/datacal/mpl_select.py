@@ -1,10 +1,12 @@
-
-# ===================================================================
-# 选择性删除数据
+"""
+    图像操作
+    选择性删除数据
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets  import RectangleSelector
+
 
 class LocSelect: # 数据选择区域
     x1 = None
@@ -69,7 +71,7 @@ class PlotXYData: # xy数据存储及操作
         loc_temp = self.loc_temp
         return self.get_data(loc_temp)
 
-    def get_del(self): # 获取目标删除数据
+    def get_data_del(self): # 获取目标删除数据
         loc_del = self.loc_del
         return self.get_data(loc_del)
 
@@ -121,17 +123,19 @@ def RightClick(event): # 鼠标右击事件
     if event.button == 3:
         
         xy_obj.xy_del(LocSelect)
-        xy_obj.get_del()
+        xy_obj.get_data_del()
 
         if Objs.xy_del_plot_obj == None: 
-            lines, = ax_obj.plot(*xy_obj.get_del(), 'o', color='r')
+            lines, = ax_obj.plot(*xy_obj.get_data_del(), 'o', color='r')
             Objs.xy_del_plot_obj = lines
         else:
             lines = Objs.xy_del_plot_obj
-            lines.set_data(*xy_obj.get_del())
+            lines.set_data(*xy_obj.get_data_del())
 
 
-def plot_select(xdata, ydata): # 
+
+def plot_select_to_del(xdata, ydata): # 
+
 
     Objs.xy_obj = PlotXYData(xdata, ydata)
 
@@ -159,7 +163,7 @@ def test_plot_select():
 
     xdata = np.linspace(0,9*np.pi, num=301)
     ydata = np.sin(xdata)
-    print( plot_select(xdata, ydata) )
+    print( plot_select_to_del(xdata, ydata) )
 
 
 if __name__ == '__main__':

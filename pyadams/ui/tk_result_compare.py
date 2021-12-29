@@ -117,7 +117,11 @@ class ResultCompareUi(tkui.TkUi):
         
         return None
 
-    def fun_data_read(self):
+    def fun_data_read(self, read_type=0):
+        """
+            read_type ： 计算读取用
+
+        """
         # 数据读取
 
         values = {}
@@ -137,8 +141,12 @@ class ResultCompareUi(tkui.TkUi):
         data_obj['a_result'].set_select_channels(values['a_result']['nchannel'])
         data_obj['b_result'].set_select_channels(values['b_result']['nchannel'])
 
-        data_obj['a_result'].set_line_ranges(values['a_result']['nrange'])
-        data_obj['b_result'].set_line_ranges(values['b_result']['nrange'])
+        if read_type == 0:
+            data_obj['a_result'].set_line_ranges(values['a_result']['nrange'])
+            data_obj['b_result'].set_line_ranges(values['b_result']['nrange'])
+        else:
+            data_obj['a_result'].set_line_ranges(None)
+            data_obj['b_result'].set_line_ranges(None)
 
         if data_obj.file_types['a_result'] in ['req','res']:
             data_obj['a_result'].read_file_faster()
@@ -161,30 +169,45 @@ class ResultCompareUi(tkui.TkUi):
 
     def fun_get_xrange(self):
 
-        values, block_size, hz_range = self.fun_data_read()
+        values, block_size, hz_range = self.fun_data_read(1)
         data_a = self.data_a
         data_b = self.data_b
 
         x_a = [value for value in range(len(data_a[0]))]
         x_b = [value for value in range(len(data_b[0]))]
 
-        x_start_a, x_end_a = None, None
-        x_start_b, x_end_b = None, None
+        a_nrange = values['a_result']['nrange']
+        b_nrange = values['b_result']['nrange']
+        if isinstance(a_nrange, list):
+            x_start_a, x_end_a = a_nrange          
+        else:
+            x_start_a, x_end_a = None, None
+
+        if isinstance(b_nrange, list):
+            x_start_b, x_end_b = b_nrange
+        else:
+            x_start_b, x_end_b = None, None
+        
         while True:
             x_start_a, x_end_a = plot.plot_get_x_range(x_a, [data_a[0]], 
                 xlabel='x:n', ylabel='y select 1', title='Data A',
                 legend=['Data-A select 0'], x_start_init=x_start_a, x_end_init=x_end_a)
+            if x_start_a == None: x_start_a = 0
+            if x_end_a == None: x_end_a = len(x_a)-1
             x_start_a, x_end_a = int(round(x_start_a)), int(round(x_end_a))
 
             x_start_b, x_end_b = plot.plot_get_x_range(x_b, [data_b[0]], 
                 xlabel='x:n', ylabel='y select 1', title='Data B',
                 legend=['Data-B select 0'], x_start_init=x_start_b, x_end_init=x_end_b)
-
+            if x_start_b == None: x_start_b = 0
+            if x_end_b == None: x_end_b = len(x_b)-1
             x_start_b, x_end_b = int(round(x_start_b)), int(round(x_end_b))
 
-            fig_obj = plt.figure()
-            plt.plot(range(len(x_a[x_start_a:x_end_a])), data_a[0][x_start_a:x_end_a], 'r')
-            plt.plot(range(len(x_b[x_start_b:x_end_b])), data_b[0][x_start_b:x_end_b], 'b')
+
+            fig_obj = plt.figure('tk_result_compare_get_range', clear=True)
+            ax1 = fig_obj.add_subplot(1,1,1)
+            ax1.plot(range(len(x_a[x_start_a:x_end_a])), data_a[0][x_start_a:x_end_a], 'r')
+            ax1.plot(range(len(x_b[x_start_b:x_end_b])), data_b[0][x_start_b:x_end_b], 'b')
             plt.show()
 
             if tkinter.messagebox.askyesno('提示', '是否确认截取范围'):

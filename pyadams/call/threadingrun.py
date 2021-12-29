@@ -1,5 +1,9 @@
-# ----------------------
-# 多线程计算模块
+"""
+    多线程计算模块
+    ADAMS支持多进程计算, 故适用多线程运行adm文件, 即可实现;
+
+    2021.12 : 增加注释
+"""
 
 import threading
 import copy, os, time, shutil, re
@@ -10,13 +14,18 @@ LOG_PATH = PY_FILE_NAME+'.log'
 logger = logging.getLogger(PY_FILE_NAME)
 
 
+# =========================================
+# =========================================
+
+
 # 数值列表数据，四舍五入
 listround = lambda list1, n: [round(v,n) for v in list1]
+
 # 保留非空格数据并转为小写
 strcal = lambda str1: re.sub(r'\s','',str1).lower() 
 
-
-threadmax = threading.BoundedSemaphore(4)   # 多线程初始设置,设置线程上限
+# 多线程初始设置,设置线程上限, 默认设置
+threadmax = threading.BoundedSemaphore(4)   
 
 # Car模型，在进行多线程计算前，进行文件复制
 def threading_car_files(sim_path, n, prefix='thread'): 
@@ -30,18 +39,22 @@ def threading_car_files(sim_path, n, prefix='thread'):
             复制相关文件：
                 acf、bat、xml、mtx
     """
-    old_dir = os.path.dirname(sim_path)
-    new_dir = os.path.join(old_dir, f'{prefix}_{n}')
+    old_dir = os.path.dirname(sim_path)              # 旧路径
+    new_dir = os.path.join(old_dir, f'{prefix}_{n}') # 新路径
     try:
         os.mkdir(new_dir)
+        logger.info(f'创建文件夹: {new_dir}')
     except:
+        logger.info(f'文件夹创建失败, 先移除文件夹, 再重新创建: {new_dir}')
         shutil.rmtree(new_dir)
         os.mkdir(new_dir)
 
-    acf_path = sim_path[:-3]+'acf'
-    bat_path = sim_path[:-3]+'bat'
-    xml_path = sim_path[:-3]+'xml'
-    old_paths = [sim_path, acf_path, bat_path, xml_path]
+    # 
+    # 文件复制
+    acf_path  = sim_path[:-3]+'acf'
+    bat_path  = sim_path[:-3]+'bat'
+    xml_path  = sim_path[:-3]+'xml'
+    old_paths = [sim_path, acf_path, bat_path, xml_path] # 复制目标
     new_paths = []
     for path in old_paths:
         new_path = os.path.join(new_dir, os.path.basename(path))
@@ -76,6 +89,8 @@ def threading_car_files(sim_path, n, prefix='thread'):
 
 
     return new_sim_path, new_dir
+
+
 
 # 灵敏度-多线程计算
 def threading_sim_doe(func, params, sim_range=0.1, simlen=4, dtime=5, threadmax=threadmax): 

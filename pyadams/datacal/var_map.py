@@ -100,9 +100,9 @@ def plot_var_color_map(data, str_type='range_analysis'):
 
 
 # csv数据读取
-def res_csv_read(csv_path):
+def _res_csv_read(csv_path):
     """
-    文档数据:
+    文档数据格式:
         u_max_divide_l_max,nsl_ride_spring_data.displacement_front,nsr_ride_spring_data.displacement_front,nsl_ride_spring_data.displacement_rear,nsr_ride_spring_data.displacement_rear
         m_vs_m,1.0,1.0,1.0,1.0
         v_L_L_L_L_vs_m,1.001567524734563,1.0019102142237435,1.0545728306980793,1.0562186775988174
@@ -140,24 +140,24 @@ def res_csv_read(csv_path):
         if not line: continue
         
         try:
-            temp    = float(line[1])
+            temp    = float(line[1]) # 判定是否为标题(必须有字符串)
             isStart = False
-            if line[0][0] == 's': continue
+            if line[0][0] == 's': continue # 首字母为s, 非目标对象!!
         except:
             isStart = True
 
-        if isStart:
+        if isStart: # 标题行
             name_ress.append(line[1:])
             if new_lines != []:
                 data_ress.append(new_lines)
                 data_vars.append(y)
             new_lines, y = [], []
             titles.append(line[0])
-        else:
+        else: # 非标题行
             y.append(line[0])
             new_lines.append(line[1:])
     
-    if new_lines:
+    if new_lines: # 最后一行增补
         data_ress.append(new_lines)
         data_vars.append(y)
 
@@ -297,7 +297,7 @@ def cal_var_color_map(csv_path, str_input=None): # 主函数
 
     csv_path = os.path.abspath(csv_path)
 
-    data_ress, data_vars, name_ress, titles = res_csv_read(csv_path)
+    data_ress, data_vars, name_ress, titles = _res_csv_read(csv_path)
     data = data_change_amdsim(data_ress, data_vars, name_ress, titles)
 
     # print(datacal.str_view_data_type(data))
@@ -321,7 +321,7 @@ def test_cal_var_color_map():
 
     # csv_path = os.path.abspath(csv_path)
 
-    # data_ress, data_vars, name_ress, titles = res_csv_read(csv_path)
+    # data_ress, data_vars, name_ress, titles = _res_csv_read(csv_path)
     # data = data_change_amdsim(data_ress, data_vars, name_ress, titles)
 
     # # print(datacal.str_view_data_type(data))
