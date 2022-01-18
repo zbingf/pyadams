@@ -35,8 +35,45 @@ import abc
 import pprint
 import pysnooper
 import copy
+import time
+import threading
+import os
+import re
+import json
+import copy
+from pyadams.call import threadingrun, cmdlink
+from pyadams.file import result
 
-g = 9.8 # 重力加速度
+import logging
+
+try:
+    PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
+    LOG_PATH = PY_FILE_NAME+'.log'
+    logger = logging.getLogger(PY_FILE_NAME)
+except:
+    logger = logging.getLogger('truck_load')
+
+
+DataModel = result.DataModel
+cmd_file_send = cmdlink.cmd_file_send
+cmd_send = cmdlink.cmd_send
+
+
+# =================================================
+
+# 字典参数转化为字符串
+def change_dict_to_str(dict1):
+    str_params = pprint.pformat(dict1)
+    str_params = str_params.replace('\\n', '')
+    str_params = str_params.replace('\'', '')
+    str_params = re.sub('\n\s+\n', '\n', str_params)
+    return str_params
+
+
+# =================================================
+# =================================================
+# 常数
+G = 9.8 # 重力加速度
 FLOAT_ROUND = 2  # float保留位数
 NAME_ROUND = 2   # 名称重点数字保留位数
 
@@ -62,7 +99,6 @@ def sub_mass(mass1, mass2):
         mass_output[key] = mass1[key] - mass2[key]
 
     return mass_output     
-
 
 # 2轴数据, 静态计算, 不考虑左右不对称问题
 def mass_static_2axle(car_param):
@@ -124,7 +160,7 @@ class Load2Axle(abc.ABC):
     def calc_x_delta_mass(self):
         pass
 
-    # 两轴质量计算
+    # 静载轮荷计算
     def get_mass_static(self):
         """
             2轴车 - 质量计算
@@ -133,27 +169,14 @@ class Load2Axle(abc.ABC):
                 + 总质量 mass_full
                 + 质心高 mass_h
                 + 轴距 wheel_base
-
         """
         return mass_static_2axle(self.car_param)
-        # mass_x = self.car_param['mass_x']
-        # mass_full = self.car_param['mass_full']
-        # wheel_base = self.car_param['wheel_base']
-
-        # mass_rear  = (mass_x * mass_full) / wheel_base
-        # mass_front = mass_full - mass_rear
-        # mass_static = {
-        #     'fl': mass_front / 2,
-        #     'fr': mass_front / 2,
-        #     'rl': mass_rear / 2,
-        #     'rr': mass_rear / 2,
-        # }
-        return mass_static
-  
 
     @staticmethod
     def get_mass_front_k(mass1):
-        # 前轴质量占比
+        """
+            前轴质量占比
+        """
         front_mass = mass1['fl'] + mass1['fr']
         rear_mass = mass1['rl'] + mass1['rr']
         full_mass = front_mass + rear_mass
@@ -161,15 +184,28 @@ class Load2Axle(abc.ABC):
 
     @staticmethod
     def get_mass_left_k(mass1):
-        # 左右轮荷占比
+        """
+            左右轮荷占比
+        """
         front_left_k = mass1['fl'] / ( mass1['fl'] + mass1['fr'] )
         rear_left_k  = mass1['rl'] / ( mass1['rl'] + mass1['rr'] )
         return front_left_k, rear_left_k
 
-    def get_mass_delta(self):
-        return self.calc_x_delta_mass(), \
-            self.calc_y_delta_mass(), \
-            self.calc_z_delta_mass()
+    def get_xyz_delta_mass(self, x_param=None, y_param=None, z_param=None):
+        """
+            x、y、z计算
+        """
+        mass_d = {}
+        type_names = ['dx', 'dy', 'dz']
+        params = [x_param, y_param, z_param]
+        funcs  = [self.calc_x_delta_mass, self.calc_y_delta_mass, self.calc_z_delta_mass]
+        for type_name, n_param, func in zip(type_names, params, funcs):
+            if n_param != None:
+                mass_d[type_name] = func(**n_param)
+            else:
+                mass_d[type_name] = func()
+        return mass_d
+
 
 
 # 制动工况 向前\向后均可
@@ -659,13 +695,15 @@ class Car:
                 mass_vector = self.mass_events[event_name][vector]
                 force_vecotr = self.force_events[event_name][vector]
                 for side in mass_vector:
-                    force_vecotr[side] = mass_vector[side] * g
+                    force_vecotr[side] = mass_vector[side] * G
 
         return self.force_events
 
 
 class Truck2Axle(Car):
-
+    """
+        卡车两轴 工况拼接
+    """
     def __init__(self, name, car_param, event_param):
         """
             car_param = {
@@ -708,6 +746,7 @@ class Truck2Axle(Car):
             mass_d['dx'] = sh_obj.calc_x_delta_mass()
             mass_d['dy'] = sh_obj.calc_y_delta_mass()
             self.add_mass_event('single_hole_{}_{}'.format(key, single_hole_ratio), mass_d)
+        logger.info(f"Truck2Axle:工况创建: 单轮过坑")
 
         # 单轮顶起
         single_jack_ratio = self.event_param['single_jack_ratio']
@@ -719,6 +758,7 @@ class Truck2Axle(Car):
             mass_d['dx'] = sj_obj.calc_x_delta_mass()
             mass_d['dy'] = sj_obj.calc_y_delta_mass()
             self.add_mass_event('single_jack_{}_{}'.format(key, single_jack_ratio), mass_d)
+        logger.info(f"Truck2Axle:工况创建: 单轮顶起")
 
         # 加速工况
         acc_g = self.event_param['acc_g']
@@ -729,6 +769,7 @@ class Truck2Axle(Car):
         mass_d['dx'] = ra_obj.calc_x_delta_mass()
         mass_d['dy'] = ra_obj.calc_y_delta_mass()
         self.add_mass_event('acc_{}g'.format(round(acc_g, NAME_ROUND)), mass_d)
+        logger.info(f"Truck2Axle:工况创建: 加速工况{acc_g}g")
 
         # 向前制动
         front_brake_g = self.event_param['front_brake_g']
@@ -739,6 +780,7 @@ class Truck2Axle(Car):
         mass_d['dx'] = brake_obj.calc_x_delta_mass()
         mass_d['dy'] = brake_obj.calc_y_delta_mass()
         self.add_mass_event('brake_{}g'.format(round(front_brake_g, NAME_ROUND)), mass_d)
+        logger.info(f"Truck2Axle:工况创建: 向前制动{front_brake_g}g")
 
         # 倒车制动
         rear_brake_g = self.event_param['rear_brake_g']
@@ -750,6 +792,7 @@ class Truck2Axle(Car):
         mass_d['dx'] = rear_brake_obj.calc_x_delta_mass()
         mass_d['dy'] = rear_brake_obj.calc_y_delta_mass()
         self.add_mass_event('brake_{}g'.format(round(rear_brake_g, NAME_ROUND)), mass_d)
+        logger.info(f"Truck2Axle:工况创建: 倒车制动{rear_brake_g}g")
 
         # 转向工况
         lateral_g = self.event_param['lateral_g']
@@ -763,6 +806,7 @@ class Truck2Axle(Car):
             mass_d['dy'] = st_obj.calc_y_delta_mass()
             event_name = 'lateral_{}g'.format(round(lateral_g, NAME_ROUND))
             self.add_mass_event(event_name, mass_d)
+        logger.info(f"Truck2Axle:工况创建: 转向工况{lateral_g}g")
 
         # 转向制动工况
         brake_lateral_x = self.event_param['brake_lateral_x']
@@ -787,6 +831,7 @@ class Truck2Axle(Car):
             event_name = 'brake_{}g_lateral_{}g'.format(round(brake_lateral_x, NAME_ROUND), round(brake_lateral_y, NAME_ROUND))
             self.add_mass_event(event_name, mass_d)
 
+        logger.info(f"Truck2Axle:工况创建: 转向制动工况, 制动{brake_lateral_x}g, 转向{brake_lateral_y}g")
 
         # 对角顶起
         diagonal_jack_ratio = self.event_param['diagonal_jack_ratio']
@@ -798,6 +843,7 @@ class Truck2Axle(Car):
             mass_d['dy'] = dj_obj.calc_y_delta_mass()
             event_name = 'diagonal_jack_{}_{}'.format(side, diagonal_jack_ratio)
             self.add_mass_event(event_name, mass_d)
+        logger.info(f"Truck2Axle:工况创建: 对角顶起")
 
         # 重力加速度
         z_g = self.event_param['z_g']
@@ -808,6 +854,7 @@ class Truck2Axle(Car):
         mass_d['dy'] = v_obj.calc_y_delta_mass()
         event_name = 'vertical_{}g'.format(z_g)
         self.add_mass_event(event_name, mass_d)
+        logger.info(f"Truck2Axle:工况创建: {z_g}g重力")
 
         return None
 
@@ -815,11 +862,66 @@ class Truck2Axle(Car):
 # =================================================
 # =================================================
 # 工况制作
-
+_LCF_TITLE = """$---------------------------------------------------------------------MDI_HEADER
+[MDI_HEADER]
+ FILE_TYPE     =  'lcf'
+ FILE_VERSION  =  6.0
+ FILE_FORMAT   =  'ascii'
+(COMMENTS)
+{comment_string}
+'Loadcase type -- Static Load'
+$--------------------------------------------------------------------------UNITS
+[UNITS]
+ LENGTH  =  'mm'
+ FORCE   =  'newton'
+ ANGLE   =  'deg'
+ MASS    =  'kg'
+ TIME    =  'sec'
+$---------------------------------------------------------------------------MODE
+[MODE]
+ STEERING_MODE  =  'angle'
+ VERTICAL_MODE_FOR_SETUP  =  'contact_patch_height'
+ VERTICAL_MODE  =  'wheel_vertical_force'
+ COORDINATE_SYSTEM  =  'vehicle'
+$---------------------------------------------------------------------------DATA
+[DATA]
+$COLUMN:  input type:  type of input data:                    side:
+$ (c1)     wheel z         disp / force                          left
+$ (c2)     wheel z         disp / force                          right
+$ (c3)     lateral         force (y)                             left
+$ (c4)     lateral         force (y)                             right
+$ (c5)     damage_radius   disp                                  left
+$ (c6)     damage_radius   disp                                  right
+$ (c7)     damage_force    force                                 left
+$ (c8)     damage_force    force                                 right
+$ (c9)     aligning        torque (z-axis)                       left
+$ (c10)    aligning        torque (z-axis)                       right
+$ (c11)    brake           force (y)                             left
+$ (c12)    brake           force (y)                             right
+$ (c13)    driving         force (y)                             left
+$ (c14)    driving         force (y)                             right
+$ (c15)    otm             torque (z-axis)                       left
+$ (c16)    otm             torque (z-axis)                       right
+$ (c17)    roll res        torque (z-axis)                       left
+$ (c18)    roll res        torque (z-axis)                       right
+$ (c19)    steering        force / steer angle / rack travel
+{ whl_z_l      whl_z_r        lat_l        lat_r      dam_rad_l      dam_rad_r      dam_for_l      dam_for_r      align_l      align_r      brake_l      brake_r      drive_l      drive_r      otm_l      otm_r      rollres_l      rollres_r        steer}
+"""
 # 开头读取
-with open(r'.\template\lcf_title_force_load.txt', 'r') as f:
-    LCF_TITLE = f.read()
-# print(LCF_TITLE)
+try:
+    lcf_template = os.path.join(os.path.dirname(__file__), r'template\lcf_title_force_load.txt')
+    
+    if os.path.exists(lcf_template):
+        with open(lcf_template, 'r') as f:
+            LCF_TITLE = f.read()
+    else:
+        logger.info(f"lcf模板路径不存在： {lcf_template} ; LCF_TITLE = _LCF_TITLE")
+        LCF_TITLE = _LCF_TITLE
+except:
+    LCF_TITLE = _LCF_TITLE
+    logger.info(f"lcf_template设置失败: LCF_TITLE = _LCF_TITLE")
+
+
 
 # 过渡状态创建
 def create_line_over(start_line, end_line, num):
@@ -833,10 +935,22 @@ def create_line_over(start_line, end_line, num):
 
     return line_overs
 
-class TruckForceEvent2AxleLcf:
 
+# LoadCase 文件创建
+class TruckForceEvent2AxleLcf:
+    """
+        两轴卡车-工况创建
+        force_events
+    """
     def __init__(self, force_events):
         self.force_events = force_events
+        self.num_event   = len(force_events) # 工况数
+
+        # -------------
+        self.line_steps  = None
+        self.lcf_path    = None
+        self.over_num    = None
+        self.event_names = None
 
     def get_event_name_status_side(self, side, event_name):
 
@@ -886,21 +1000,31 @@ class TruckForceEvent2AxleLcf:
         
         force_events = self.force_events
         lines = []
+        event_names = []
         for event_name in force_events:
             line = self.get_event_name_status_side(side, event_name)
             # print(line)
             lines.append(line)
+            event_names.append(event_name)
+
+        self.event_names = event_names
         return lines
 
-    def get_line_steps_side(self, side, over_num=10):
+    def get_line_steps_side(self, side, over_num=10, car_param=None):
         """
-            over_num 过度间隔数量
+            over_num 过渡间隔数量
             side 'f' or 'r' 前/后轴
         """
         lines = self.get_event_status_side(side)
 
         line_float_steps = []
-        start_line = [0.0]*19
+        if car_param == None:
+            start_line = [0.0]*19
+        else:
+            mass_static = mass_static_2axle(car_param)
+            force_v = mass_static[side+'l']*9.8
+            start_line = [force_v, force_v] + [0.0]*17
+
         # over_num = 5
         for line in lines: 
             line_float = [float(v) for v in line.split(' ')]
@@ -908,45 +1032,72 @@ class TruckForceEvent2AxleLcf:
             line_overs_2 = create_line_over(line_float, start_line, over_num)
 
             line_float_steps.append(start_line)
-            line_float_steps.extend(line_overs_1) # 过度
+            line_float_steps.extend(line_overs_1) # 过渡
             line_float_steps.append(line_float) # 结尾
-            line_float_steps.extend(line_overs_2) # 过度
+            line_float_steps.extend(line_overs_2) # 过渡
 
         line_steps = [' '.join([str(round(v, FLOAT_ROUND)) for v in line]) for line in line_float_steps]
-
+        self.line_steps = line_steps
         return line_steps
 
-    def create_lcf(self, side, file_path, over_num=10):
+    def create_lcf(self, side, file_path, over_num=10, car_param=None):
         """
             创建lcf文件
         """
-        line_steps = self.get_line_steps_side(side, over_num)
+        line_steps = self.get_line_steps_side(side, over_num, car_param)
 
         with open(file_path, 'w') as f:
             f.write(LCF_TITLE + '\n'.join(line_steps))
 
+        self.lcf_path = file_path
+        self.over_num = over_num
+        logger.info(f"TruckForceEvent2AxleLcf: lcf创建 over_num(过渡step):{over_num}")
+        logger.info(f"TruckForceEvent2AxleLcf: lcf创建 lcf_path:{file_path}")
+        return None
 
+    def get_status_locs(self, start_n):
+        """
+            根据start_n 工况起始位置
+            计算各工况所在位置
+            需求：
+                工况过渡步数 over_num
+                工况数      num_event
+        """
+        num = self.over_num
+        status_len = self.num_event
+
+        loc1 = start_n + ( num + 1 )
+        loc2 = loc1 + 2* ( num +1 )
+        if status_len == 1:
+            return [loc1]
+        if status_len == 2:
+            return [loc1, loc2]
+        elif status_len > 2:
+            loc_last = loc2
+            locs = [loc1, loc2]
+            for n in range(2, status_len):
+                loc_n = loc_last + 2* ( num +1 )
+                locs.append(loc_n)
+                loc_last = loc_n
+
+            return locs
 
 # =================================================
 # =================================================
 # 仿真调用
 
-import os
-import pyadams.call.cmdlink as cmdlink
-cmd_file_send = cmdlink.cmd_file_send
-cmd_send = cmdlink.cmd_send
-
-# cmd_file_send(cmd_path=None, mode='car', res_path=None, minutes=30)
-# cmd_send(cmds, cmd_path=None, mode='car', savefile=False, res_path=None, minutes=30)
-
-# 悬架asy打开
+# cmd命令-悬架asy打开
 CMD_OPEN_SUS_ASY = """
 acar files assembly open &
     assembly_name="#asy_path#"
 """
 
-# 悬架asy分析调用
+# cmd命令-悬架asy分析调用
 CMD_SIM_LOADCASE = """
+executive set equilibrium model = .#asy_name# error = 1
+executive set equilibrium model = .#asy_name# maxit = 100
+executive set equilibrium model = .#asy_name# tlimit = 5
+
 acar analysis suspension loadcase submit &
     assembly=.#asy_name# &
     variant=default &
@@ -958,13 +1109,24 @@ acar analysis suspension loadcase submit &
     log_file=yes
 """
 
+# cmd命令-退出
 CMD_QUIT = 'quit'
 
+# 仿真运行-悬架装配系统
 def sim_sus(sim_param):
     """
         悬架仿真计算 
-            + adams cmd命令仿真
+            + 使用adams cmd命令仿真
+
+        sim_param = {
+            sus_asy_path: asy悬架装配模型路径
+            lcf_path : loadcase文件路径
+            sim_prefix : 仿真前缀
+            run_dir : 仿真运行路径
+        }
     """
+
+    # 参数设置
     sus_asy_path = sim_param['sus_asy_path']
     lcf_path     = sim_param['lcf_path']
     sim_prefix   = sim_param['sim_prefix']
@@ -972,6 +1134,7 @@ def sim_sus(sim_param):
 
     asy_name = os.path.basename(sus_asy_path)[:-4]
 
+    # 命令设置及编辑
     cmd_list = [CMD_OPEN_SUS_ASY, CMD_SIM_LOADCASE, CMD_QUIT]
     replace_dict = {
         '#asy_path#': sus_asy_path,
@@ -986,6 +1149,7 @@ def sim_sus(sim_param):
             line_cmd = line_cmd.replace(key, replace_dict[key])
         cmd_to_runs.append(line_cmd)
 
+    # 仿真相关文件定义
     res_name = sim_prefix + '_' + os.path.basename(lcf_path)[:-4]
     msg_name = sim_prefix + '_' + 'suspnsn'
 
@@ -993,21 +1157,22 @@ def sim_sus(sim_param):
     file_remove_pt(run_dir, prefix=res_name, file_type=None)
     file_remove_pt(run_dir, prefix=msg_name, file_type=None)
 
+    # 仿真
     res_path = os.path.join(run_dir, res_name) + '.res'
     msg_path = os.path.join(run_dir, msg_name) + '.msg'
-    cmd_path = os.path.join(run_dir, 'temp_AutoSimCommand.cmd')
+    cmd_path = os.path.join(run_dir, f'temp_AutoSimCommand_{res_name}.cmd')
     cmd_str = '\n'.join(cmd_to_runs)
     cmd_send(cmd_str, 
         cmd_path=cmd_path, 
         mode='car', 
         savefile=False, 
-        res_path=msg_path, 
-        minutes=30,
-        true_res_path=res_path)
+        res_path=msg_path, # 监测msg用
+        # minutes=30,
+        true_res_path=res_path, # 实际res文件
+        )
     
     assert os.path.exists(res_path)
     return res_path
-
 
 
 # 删除文件夹内制定文件
@@ -1039,7 +1204,6 @@ def file_remove_pt(path, prefix=None, file_type=None):
     return True
 
 
-
 # =================================================
 # =================================================
 # 集成
@@ -1056,97 +1220,420 @@ input data:
     + 创建工况 lcf
     + 仿真输出 res
     + 读取res结果
-
 """
-import threading
-from pyadams.call import threadingrun
-import time
 
-# name, car_param, event_param, front_asy_path, 
-# rear_asy_path, front_lcf_path, rear_lcf_path,
-# run_dir
+# 行列转换
+def list2d_reshape(list2d):
+    """
+    """
+    new_list2d = []
+    for n1 in range(len(list2d[0])):
+        line = []
+        for n2 in range(len(list2d)):
+            line.append(list2d[n2][n1])
+        new_list2d.append(line)
+    return new_list2d
 
-def truck_load_calc(calc_param):
 
-    name = calc_param['name']
-    car_param = calc_param['car_param']
-    event_param = calc_param['event_param']
-    front_asy_path = calc_param['front_asy_path']
-    rear_asy_path = calc_param['rear_asy_path']
-    # front_lcf_path = calc_param['front_lcf_path']
-    # rear_lcf_path = calc_param['rear_lcf_path']
-    run_dir = calc_param['run_dir']
+# 卡车两轴提载控制
+class TruckLoad2AxleControl:
+    """
+        + 仿真运行
+        + res文件读取
+    """
+    def __init__(self, calc_param, car_param, event_param):
+        """
+            calc_param = {
+                'name' : 
+                'front_asy_path' : 
+                'rear_asy_path' : 
+                'run_dir' : 
+            }
+            car_parm = {
+                
+            }
+            event_parm = {
+                
+            }
 
-    # ---------------------------
-    # 工况创建
-    truck_obj = Truck2Axle(name, car_param, event_param)
-    truck_obj.create_event()
-    force_events = truck_obj.mass2force()
-    tfe_obj = TruckForceEvent2AxleLcf(force_events)
-     
-    front_lcf_name = 'Truck2Axle_F.lcf'
-    rear_lcf_name  = 'Truck2Axle_R.lcf'
-     
-    front_lcf_path = os.path.join(run_dir, front_lcf_name)
-    rear_lcf_path = os.path.join(run_dir, rear_lcf_name)
+        """
+        self.calc_param = calc_param
+        self.car_param = car_param
+        self.event_param = event_param
 
-    tfe_obj.create_lcf('f', front_lcf_path)
-    tfe_obj.create_lcf('r', rear_lcf_path)
+        # --------------------
+        self.res_dict = None
+        self.force_events = None
+        self.status_locs = None
+        self.tfe_obj = None
+        self.event_names = None
+        self.request_param = None
 
-    # ---------------------------
-    # 仿真
-    class ResPath:
-        res_paths = []
+    def load_calc(self):
+        """
+            仿真计算输出 res文件路径
 
-    # 装饰目标函数
-    def func_res_get(func):
-        # 多进程计算调用函数
-        # 装饰
-        def new_func(*args, **kwargs):
-            result = func(*args,**kwargs)
-            ResPath.res_paths.append(result)
-            return result
+        """
+        calc_param = self.calc_param
+        car_param = self.car_param
+        event_param = self.event_param
 
-        return new_func
+        logger.info(f"TruckLoad2AxleControl.load_calc 开始")
+        logger.info(f"  仿真计算 calc_param:\n{change_dict_to_str(calc_param)}")
 
-    asy_paths = [front_asy_path, rear_asy_path]
-    lcf_paths = [front_lcf_path, rear_lcf_path]
-    # threadmax = threading.BoundedSemaphore(2)     # 多线程初始设置,设置线程上限
-    ResPath.res_paths = []
-    # cur_dir = os.getcwd()
-    # os.chdir(run_dir) # 更改当前路径为计算路径
-    cur_n = 0
-    for asy_path, lcf_path in zip(asy_paths, lcf_paths):
-        run_dir_n = os.path.join(run_dir, f"AutoSim_{cur_n}")
-        cur_n += 1
-        if not os.path.exists(run_dir_n):
-            os.mkdir(run_dir_n)
+        name = calc_param['name']
+        front_asy_path = calc_param['front_asy_path']
+        rear_asy_path = calc_param['rear_asy_path']
+        run_dir = calc_param['run_dir']
+        over_num = calc_param['over_num']
 
-        sim_prefix = "AutoSim_" + os.path.basename(asy_path)[:-4]
-        sim_param = {
-            'sus_asy_path': asy_path,
-            'lcf_path': lcf_path,
-            'sim_prefix': sim_prefix,
-            'run_dir': run_dir,  # ---------------
-        }
-        ResPath.res_paths.append(sim_sus(sim_param))
-    #     new_func = threadingrun.threading_func(sim_sus, threadmax=threadmax)
-    #     new_func2 = func_res_get(new_func)
-    #     threads = []
-    #     thread  = threading.Thread(target=new_func2, args=(sim_param, ))
-    #     thread.start()
-    #     threads.append(thread)
-    #     threadmax.acquire()
-    #     time.sleep(30)
+        # ---------------------------
+        # 工况创建
+        truck_obj = Truck2Axle(name, car_param, event_param)
+        truck_obj.create_event()
+        force_events = truck_obj.mass2force()
+        tfe_obj = TruckForceEvent2AxleLcf(force_events)
+         
+        front_lcf_name = 'Truck2Axle_F.lcf'
+        rear_lcf_name  = 'Truck2Axle_R.lcf'
+         
+        front_lcf_path = os.path.join(run_dir, front_lcf_name)
+        rear_lcf_path = os.path.join(run_dir, rear_lcf_name)
 
-    # while threads:
-    #     threads.pop().join()
+        tfe_obj.create_lcf('f', front_lcf_path, over_num=over_num, car_param=car_param)
+        tfe_obj.create_lcf('r', rear_lcf_path, over_num=over_num, car_param=car_param)
 
-    # os.chdir(cur_dir)
+        # ---------------------------
+        # 仿真
+        """
+            多线程计算暂无法使用
+        """
 
-    # print(ResPath.res_paths)
-    return ResPath.res_paths
+        # 数据保存
+        class ResPath:
+            res_paths = []
+            res_dict  = {}
 
+        # 装饰目标函数
+        def func_res_get(func):
+            # 多进程计算调用函数
+            # 装饰
+            def new_func(*args, **kwargs):
+                result = func(*args,**kwargs)
+                ResPath.res_paths.append(result)
+                return result
+            return new_func
+
+        ResPath.res_paths = []
+        ResPath.res_dict  = {}
+        asy_paths = [front_asy_path, rear_asy_path]
+        lcf_paths = [front_lcf_path, rear_lcf_path]
+        res_keys  = ['front', 'rear']
+        # threadmax = threading.BoundedSemaphore(2)     # 多线程初始设置,设置线程上限
+        cur_n = 0
+        for asy_path, lcf_path, res_key in zip(asy_paths, lcf_paths, res_keys):
+
+            # run_dir_n = os.path.join(run_dir, f"AutoSim_{cur_n}")
+            # cur_n += 1
+            # if not os.path.exists(run_dir_n):
+            #     os.mkdir(run_dir_n)
+            run_dir_n = run_dir
+
+            # 仿真前缀提前定义
+            sim_prefix = "AutoSim_" + os.path.basename(asy_path)[:-4]
+            sim_param = {
+                'sus_asy_path': asy_path, 
+                'lcf_path': lcf_path, 
+                'sim_prefix': sim_prefix, 
+                'run_dir': run_dir_n, 
+            }
+            res_path = sim_sus(sim_param)
+            ResPath.res_paths.append(res_path)
+            ResPath.res_dict[res_key] = res_path
+        #     new_func = threadingrun.threading_func(sim_sus, threadmax=threadmax)
+        #     new_func2 = func_res_get(new_func)
+        #     threads = []
+        #     thread  = threading.Thread(target=new_func2, args=(sim_param, ))
+        #     thread.start()
+        #     threads.append(thread)
+        #     threadmax.acquire()
+        #     time.sleep(30)
+
+        # while threads:
+        #     threads.pop().join()
+
+        # print(ResPath.res_paths)
+
+        # 
+        self.res_dict = ResPath.res_dict
+        self.force_events = force_events
+        self.tfe_obj = tfe_obj
+        self.event_names = tfe_obj.event_names
+
+        # logger.info(f"  仿真计算, 结束, res_dict:{change_dict_to_str(res_dict)}")
+        logger.info(f"TruckLoad2AxleControl.load_calc 结束")
+        return self.res_dict
+
+    def parse_res(self, request_param):
+        """
+            读取res, 解析数据
+            data_name : 数据名称
+
+            res_dict  : {
+                'front': res_path, 
+                'rear':res_path
+            }
+
+            request_param: {
+                'front': {'req':[str,], 'comp':[str,]},
+                'rear' : {'req':[str,], 'comp':[str,]},
+            }
+
+        """
+        logger.info(f"TruckLoad2AxleControl.parse_res: ")
+        # logger.info(f"  res读取, request_param:{change_dict_to_str(request_param)}")
+        logger.info(f"  res读取, request_param:{request_param}")
+
+        self.request_param = request_param
+        data_name = self.calc_param['name']
+        res_dict  = self.res_dict
+
+        dataobj = DataModel(data_name)
+        data_full = []
+        reqs_full, comps_full = [], []
+        for res_key in res_dict:
+            reqs  = request_param[res_key]['req']
+            reqs_full.extend(reqs)
+            comps = request_param[res_key]['comp']
+            comps_full.extend(comps)
+
+            dataobj.new_file(res_dict[res_key], res_key)
+            dataobj[res_key].set_reqs_comps(reqs, comps)
+            dataobj[res_key].set_line_ranges(None)
+            dataobj[res_key].set_select_channels(None)
+            dataobj[res_key].read_file(isReload=True)
+            data = dataobj[res_key].get_data()
+
+            # 拼接前后request
+            data_full.extend(data)
+
+        self.data_full = data_full
+        self.reqs_full  = reqs_full
+        self.comps_full = comps_full
+        logger.info(f"TruckLoad2AxleControl.parse_res 结束")
+        return data_full
+
+    def get_status(self, loc):
+        """
+            截取状态
+        """
+        return [line[loc] for line in self.data_full]
+
+    def get_status_data(self):
+        """
+            获取工况数据
+        """
+        res_path = self.res_dict['front']
+        start_n = self.get_res_sus_loadcase_start(res_path)
+        locs = self.tfe_obj.get_status_locs(start_n)
+        data_status = []
+        for loc in locs:
+            data_status.append(self.get_status(loc))
+
+        self.data_status = data_status
+        return data_status
+
+    @staticmethod
+    def get_res_sus_loadcase_start(res_path):
+        """
+            准静态计算起始位置
+            list直接索引
+        """
+        f = open(res_path, 'r')
+        line = f.readline()
+        n = -1
+        while line:
+            line = line.lower()
+            if re.match('<step\s+type', line):
+                n += 1
+                if 'type="quasistatic"' in line:
+                    break
+            line = f.readline()
+        f.close()
+        return n
+
+    def print_to_csv(self, csv_param):
+        """
+            导出csv
+            csv_param = {
+                'num_force_comp' : int  # 六分力 or n分力
+                'csv_view_path' : csv 查看用
+                'csv_hm_path' : csv 对接hm二次开发用
+            }
+        """
+        logger.info(f"TruckLoad2AxleControl.print_to_csv 开始")
+        logger.info(f"  导出CSV, csv_param:{change_dict_to_str(csv_param)}")
+
+        num_force_comp = csv_param['num_force_comp']
+        csv_view_path = csv_param['csv_view_path']
+        csv_hm_path = csv_param['csv_hm_path']
+        # 获取工况数据
+        data_status = self.get_status_data()
+        event_names = self.event_names
+        reqs_full = self.reqs_full
+        comps_full = self.comps_full
+        
+        num_reqs = len(reqs_full)
+        num_force_point = num_reqs / num_force_comp
+        assert num_force_point == int(num_force_point)
+        num_force_point = int(num_force_point)
+
+        lines_event_2d = []
+        for n in range(num_force_comp):
+            line = []
+            for data in data_status:
+                line.extend(data[n::num_force_comp])
+            lines_event_2d.append(line)
+
+        lines_event_2d = copy.deepcopy(lines_event_2d)
+        lines_event_2d = list2d_reshape(lines_event_2d)
+        lines_event_1d = [','.join([str(v) for v in line]) for line in lines_event_2d]
+
+        # --------------------------
+        # csv对接hm, 主要数据
+        # lines_event_1d, event_names, num_force_comp, reqs_full, num_force_point
+        # csv_hm_path
+        lines_main = []
+        for n in range(num_force_point):
+            lines_main.append(','.join(lines_event_1d[n::num_force_point]))
+
+        # 增加标题行
+        line_title = ','.join([event_name+','*(num_force_comp-1) for event_name in event_names])
+        lines_main.insert(0, line_title)
+
+        # 开头增加坐标列
+        for loc, line in enumerate(lines_main):
+            lines_main[loc] = ',,,'+line
+
+        output_str = '\n'.join(lines_main)
+        
+        with open(csv_hm_path, 'w') as f:
+            f.write(output_str)
+
+        # --------------------------
+        # csv 阅读用
+        # lines_event_1d, event_names, num_force_comp, reqs_full, comps_full, num_force_point
+        # csv_view_path
+        lines_view = []
+        num_view = 3 # 空行间隔数
+        force_comp_names = ['Fx(N)', 'Fy(N)', 'Fz(N)', 'Tx(N*mm)', 'Ty(N*mm)', 'Tz(N*mm)']
+
+        # 加载点名称定义
+        reqs  = reqs_full[0::num_force_comp]
+        comps = comps_full[0::num_force_comp]
+        req_views = []
+        for req, comp in zip(reqs, comps):
+            if '_' in comp:
+                req = req + '.' + '_'.join(comp.split('_')[1:])
+            req_views.append(req)
+
+        for n in range(len(event_names)): # 工况检索
+            title_view = event_names[n] + ',' + ','.join(force_comp_names[:num_force_comp])
+            lines_view.append(title_view)
+
+            # 增加首列, 注释列
+            for loc, line in enumerate(lines_event_1d[ num_force_point*n : num_force_point*(n+1) ]):
+                lines_view.append(req_views[loc] + ',' + line)
+
+            for n2 in range(num_view):
+                lines_view.append(','*num_force_comp)
+
+        output_str = '\n'.join(lines_view)
+
+        with open(csv_view_path, 'w') as f:
+            f.write(output_str)
+
+        logger.info("  导出CSV, 完成")
+        logger.info(f"TruckLoad2AxleControl.print_to_csv 结束")
+        return None
+
+
+import csv
+import xlsxwriter
+
+# csv 转 excel  xlsx
+def csv2excel_xlsx(workbook, csv_path, sheet_name):
+    """
+        xlsxwriter、csv 库
+
+        csv文件读取 并转化为excel的表跟数据
+        workbook    xlwt.Workbook 实例
+        csv_path    目标csv文件路径
+        sheet_name  目标表跟数据的sheet名称
+    """
+    if len(sheet_name)>31: # excel表格名称字符不能超31
+        sheet_name = sheet_name[-31:]
+
+    worksheet = workbook.add_worksheet(name = sheet_name)
+    with open(csv_path, 'r') as f:
+        rows = csv.reader(f)
+        for irow, row in enumerate(rows):
+            for icol, value in enumerate(row):
+                try:
+                    value = float(value)
+                except:
+                    pass
+                worksheet.write(irow, icol, value)
+
+    return workbook
+
+
+def collect_csv2excel(excel_path, csv_paths):
+    # 文件保存 - xlsx
+    assert excel_path[-5:].lower()=='.xlsx'
+
+    init_excel_path = excel_path
+    n = 1
+    while True:
+        if os.path.exists(excel_path):
+            excel_path = init_excel_path[:-5] + f'_{n}.xlsx'
+        else:
+            break
+        n += 1
+
+    workbook = xlsxwriter.Workbook(filename=excel_path)
+
+    for csv_path in csv_paths:
+        name = os.path.basename(csv_path)[:-4]
+        csv2excel_xlsx(workbook, csv_path, name)
+
+    workbook.close()
+    return None
+
+
+def load_json(json_path):
+
+    lines = [] 
+    with open(json_path, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            if line.strip().startswith('//'):
+                continue
+            lines.append(line)
+
+    return json.loads('\n'.join(lines))
+
+
+def main_truck2axle(car_param, calc_param, event_param, csv_param, request_param):
+    
+    tlc = TruckLoad2AxleControl(calc_param, car_param, event_param)
+    tlc.load_calc()
+    tlc.parse_res(request_param)
+    tlc.print_to_csv(csv_param)
+
+    excel_path = csv_param['excel_path']
+    csv_paths = [csv_param['csv_view_path'], csv_param['csv_hm_path']]
+    collect_csv2excel(excel_path, csv_paths)
+    return None
 
 # =================================================
 # =================================================
@@ -1172,6 +1659,30 @@ test_event_param = {
     'diagonal_jack_ratio': 0.5, # 对角顶起(扭曲路)
     'z_g':2,                    # 重力加速度
 }
+
+test_calc_param = {
+    'name': 'T5DB',
+    'front_asy_path': r'\\sjnas02\BRDI03\4.VehicleDynamic\01_model\ADAMS_Data\T5DB.cdb\assemblies.tbl\T5DB_front_sus.asy',
+    'rear_asy_path': r'\\sjnas02\BRDI03\4.VehicleDynamic\01_model\ADAMS_Data\T5DB.cdb\assemblies.tbl\T5DB_rear_sus.asy',
+    'run_dir': 'E:/adams_work',
+}
+
+test_request_param = {
+    'front': {'req':['L_shock_to_frame_Force', 'L_shock_to_frame_Force', 'L_shock_to_frame_Force', 'R_shock_to_frame_Force', 'R_shock_to_frame_Force', 'R_shock_to_frame_Force'], 
+            'comp':['Fx_front', 'Fy_front', 'Fz_front', 'Fx_front', 'Fy_front', 'Fz_front']},
+    'rear' : {'req':['L_shock_to_frame_Force', 'L_shock_to_frame_Force', 'L_shock_to_frame_Force', 'R_shock_to_frame_Force', 'R_shock_to_frame_Force', 'R_shock_to_frame_Force'], 
+            'comp':['Fx_rear', 'Fy_rear', 'Fz_rear', 'Fx_rear', 'Fy_rear', 'Fz_rear']},
+}
+
+test_csv_param = {
+    'num_force_comp': 6, # 六分力 or n分力
+    'csv_view_path': r'E:\adams_work\__view.csv', 
+    'csv_hm_path': r'E:\adams_work\__hm.csv', 
+    'excel_path': r'E:\adams_work\T5DB_truck2axle_force.xlsx',
+}
+
+
+test_sus_asy_path = r'\\sjnas02\BRDI03\4.VehicleDynamic\01_model\ADAMS_Data\T5DB.cdb\assemblies.tbl\T5DB_front_sus.asy',
 
 
 def test_Truck2Axle():
@@ -1310,8 +1821,8 @@ def test_TruckForceEvent2AxleLcf():
 
 # 悬架仿真测试
 def test_sim_sus():
-
-    sus_asy_path = r""
+    
+    sus_asy_path = test_sus_asy_path
     lcf_path = r"E:\adams_work\test_f.lcf"
     run_dir = r"E:\adams_work"
 
@@ -1332,26 +1843,34 @@ def test_sim_sus():
     os.chdir(cur_dir)
 
 
-def test_truck_load_calc():
+def test_TruckLoad2AxleControl():
+
+    car_param   = test_car_param
+    calc_param  = test_calc_param
+    event_param = test_event_param
+    csv_param   = test_csv_param
+    request_param = test_request_param
+
+    pprint.pprint(calc_param)
+
+    tlc = TruckLoad2AxleControl(calc_param, car_param, event_param)
+    tlc.load_calc()
+    tlc.parse_res(request_param)
+    tlc.print_to_csv(csv_param)
+
+    excel_path = csv_param['excel_path']
+    csv_paths = [csv_param['csv_view_path'], csv_param['csv_hm_path']]
+    collect_csv2excel(excel_path, csv_paths)
 
 
-    calc_param = {
-        'name': 'T5DB',
-        'car_param': test_car_param,
-        'event_param': test_event_param,
-        'front_asy_path': r'',
-        'rear_asy_path': r'',
-        # 'front_lcf_path': ,
-        # 'rear_lcf_path': ,
-        'run_dir': 'E:/adams_work',
-    }
+def test_TruckLoad2AxleControl2(json_path):
 
-    print(truck_load_calc(calc_param))
+    params = load_json(json_path)
+    main_truck2axle(**params)
 
 
 if __name__=='__main__':
     pass
-    import logging
     logging.basicConfig(level=logging.INFO)
 
     # test_Truck2Axle()
@@ -1369,4 +1888,6 @@ if __name__=='__main__':
     # print('\n'.join(line_steps))
 
     # test_sim_sus()
-    truck_load_calc()
+    # test_TruckLoad2AxleControl()
+    test_TruckLoad2AxleControl2('truck_load.json')
+
