@@ -1,0 +1,7 @@
+{
+	"sim_name"  : "auto_sim",
+    "mode"      : "interactive",
+    "gear"      : 0,
+    "sim_type"  : "settle",
+    "preload_path" : "acar_full_static_preload_01.spr"
+}

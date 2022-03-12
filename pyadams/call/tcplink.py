@@ -24,7 +24,7 @@ PORT=5002
 LOCALHOST='127.0.0.1'
 
 
-def cmd_send(cmds,type_in='cmd'): # cmd 数据传送
+def cmd_send(cmds, type_in='cmd'): # cmd 数据传送
 	'''
 	type_in : query or cmd
 	query 获取参数
@@ -35,25 +35,37 @@ def cmd_send(cmds,type_in='cmd'): # cmd 数据传送
 			cmds=cmd_convert(cmds)
 
 	if type([])==type(cmds):
-		cmd=[]
+		cmd = []
 		for line in cmds:
-			cmd.append(bytes('{} {}'.format(type_in,line),encoding='utf8'))
+			cmd.append(bytes('{} {}'.format(type_in, line),encoding='utf8'))
+
 	elif type('')==type(cmds):
-		cmd=[bytes('{} {}'.format(type_in,cmds),encoding='utf8')]
+		cmd = [bytes('{} {}'.format(type_in, cmds),encoding='utf8')]
+
+	socket_obj = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	for line in cmd:
-		socket_obj=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		n=1
-		while n==1:
+		n = 1
+		while True:
 			try:
-				socket_obj.connect((LOCALHOST,PORT))
+				socket_obj.connect((LOCALHOST, PORT))
 				break
 			except socket.error:
 				time.sleep(1)
+			# n += 1
+			# if n > 100:
+			# 	break
 		socket_obj.send(line)
-		print(line)
+		# print(line)
+
 	if type_in=='query':
-		socket_obj.recv(1024)
+		try:
+			socket_obj.recv(1024)
+		except:
+			print('接收报错')
+			pass
+
 		socket_obj.send(b"OK")
+
 	return socket_obj.recv(1024)
 
 

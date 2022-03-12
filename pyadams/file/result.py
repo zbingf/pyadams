@@ -790,7 +790,7 @@ class DataModel:
 
         assert os.path.exists(file_path)
         # assert not name in self.objs
-        if name in self.objs: logger.warning(f'DataModel.new_file: {name} is exists')
+        if name in self.objs: logger.warning(f'DataModel.new_file: {name} is exists, cover')
 
         # ==============================
         file_types = self.file_types

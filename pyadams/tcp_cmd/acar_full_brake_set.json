@@ -1,0 +1,17 @@
+{
+	"sim_name"  : "auto_sim",
+    "t_end"  	: 10,
+    "step"      : 1000,
+    "mode"      : "interactive",
+    "steer"     : "locked",
+    "t_start"	: 1,
+    "gear"      : 1,
+    "duration"  : 0.6,
+    "requests"  : "chassis_displacements,chassis_displacements,chassis_displacements,chassis_velocities,chassis_accelerations",
+    "components": "longitudinal,lateral,pitch,longitudinal,longitudinal",
+    "comments"   : "x_dis, y_dis, pitch, velocity, x_acc",
+    "req_units" : "mm,mm,rad,velocity,g",
+    "target_g": 0.5,
+    "target_tolerance_g" : 0.01,
+    "velocity_list" : "60,30"
+}
