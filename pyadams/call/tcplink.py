@@ -22,7 +22,7 @@ import glob
 # 连接设置
 PORT=5002
 LOCALHOST='127.0.0.1'
-
+RECV_LEN = 8192
 
 def cmd_send(cmds, type_in='cmd'): # cmd 数据传送
 	'''
@@ -59,14 +59,14 @@ def cmd_send(cmds, type_in='cmd'): # cmd 数据传送
 
 	if type_in=='query':
 		try:
-			socket_obj.recv(1024)
+			socket_obj.recv(RECV_LEN)
 		except:
 			print('接收报错')
 			pass
 
 		socket_obj.send(b"OK")
 
-	return socket_obj.recv(1024)
+	return socket_obj.recv(RECV_LEN)
 
 
 def cmd_convert(cmd_str): # cmd数据转化

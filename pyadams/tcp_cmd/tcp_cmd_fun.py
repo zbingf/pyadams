@@ -13,8 +13,6 @@ cmds_run = tcplink.cmds_run # 直接运行,未处理的多个命令行
 cmd_send = tcplink.cmd_send
 
 
-
-
 # ------------------------------------------------
 # ------------------------------------------------
 # --------------------self-------------------------
@@ -102,27 +100,19 @@ def set_default_cdb(cdb_name):
     return None
 
 
-CMD_OPEN_ASY = """
+# # 打开asy总装配
+# def set_open_asy(asy_path):
+#     new_cmd = _cmd_replace(, asy_path=asy_path)
+#     cmds_run(new_cmd)
+#     return None
+
+
+CMD_CLOSE_ASY = """
 acar files assembly close assembly_name=#asy_name#
 """
-
-# 打开asy总装配
-def set_open_asy(asy_path):
-    new_cmd = _cmd_replace(CMD_DEFAULT_CDB, asy_path=asy_path)
-    cmds_run(new_cmd)
-    return None
-
-
 # 关闭asy总装配
 def set_close_asy(asy_name):
-    new_cmd = _cmd_replace(CMD_OPEN_ASY, asy_name=asy_name)
-    cmds_run(new_cmd)
-    return None
-
-
-# 设置工作路径
-def set_chdir(cur_dir):
-    new_cmd = _cmd_replace(CMD_OPEN_ASY, asy_name=asy_name)
+    new_cmd = _cmd_replace(CMD_CLOSE_ASY, asy_name=asy_name)
     cmds_run(new_cmd)
     return None
 
@@ -242,10 +232,41 @@ def _query_db_exist(obj_name):
 
 
 _TEMP_DB_CHILDREN = 'TEMP_DB_CHILDREN'
+# 指定类型检索子项
 def _query_db_children(name_model_cur, obj_type):
 
     cmds_run(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=.{name_model_cur}')
     cmds_run(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=(eval(db_children(.{name_model_cur}, "{obj_type}")))')
+    str1 = _query_send(f'.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    cmds_run(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    if str1 == 'No data from View':
+        return False
+    else:
+        return _str2list(str1)
+
+
+# 指定类型检索子项, 限制层数
+def _query_db_descendants(name_model_cur, obj_type, a=1, l=2):
+
+    cmds_run(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=.{name_model_cur}')
+    cmds_run(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=(eval(db_descendants(.{name_model_cur}, "{obj_type}", 1, 2)))')
+    str1 = _query_send(f'.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    cmds_run(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    if str1 == 'No data from View':
+        return False
+    else:
+        return _str2list(str1)
+    
+    
+# 指定类型检索子项, 并指定名称范围
+# _query_db_children_filter(model_name, "request", "*velocity*")
+def _query_db_children_filter(name_model_cur, obj_type, filter_str):
+
+    cmds_run(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} \
+             object_value=.{name_model_cur}')
+    cmds_run(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} \
+             object_value=(eval(db_filter_name(db_children(.{name_model_cur}, "{obj_type}"), "{filter_str}")))')
+           
     str1 = _query_send(f'.{name_model_cur}.{_TEMP_DB_CHILDREN}')
     cmds_run(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
     if str1 == 'No data from View':
@@ -339,6 +360,8 @@ list_info aggregate_mass &
 """
 
 # 获取模型质量数据
+# model_name = get_current_model()
+# get_aggregate_mass(model_name)
 def get_aggregate_mass(model_name):
 
     cur_dir = get_cwd()
@@ -373,9 +396,11 @@ def get_aggregate_mass(model_name):
     mass_data['model_name'] = model_name
     return mass_data
 
-    # model_name = get_current_model()
-    # get_aggregate_mass(model_name)
 
+# 通过filter获取指定request
+def get_request_by_filter(model_name, filter_str):
+    
+    return _query_db_children_filter(model_name, "request", filter_str)
 
 
 # ------------------------------------------------
@@ -528,9 +553,14 @@ def get_tire_data(name_full):
     minor = get_sub_elem_minor(name_full)
     path = _query_send(f'{name_full}.property_file')
 
+    center_loc = _query_send(f'{name_full}.i_marker')
+    # .MDI_Demo_Vehicle.TR_Rear_Tires.whl_wheel.loc
+    center_loc = _str2list(_query_send(f'{_parent_name(center_loc)}.loc'))
+    center_loc = [round(float(v), 2) for v in center_loc]
+
     req_name = name_full.split('.')[-1]+'_tire_forces'
 
-    return {'path':path, 'name_full':name_full, 
+    return {'path':path, 'name_full':name_full, 'loc':center_loc,
         'req_name':req_name, 'minor':minor}
 
         
@@ -538,7 +568,8 @@ def get_tire_data(name_full):
 def get_model_tire_data(model_name):
 
     return _get_model_obj_data(model_name, get_model_tire_names, get_tire_data)
-    # print(get_model_tire_data(get_current_model()))
+
+# print(get_model_tire_data(get_current_model()))
 
 
 # ------------------------------------------------
@@ -822,20 +853,23 @@ def test_sim_full_static():
 
 
 def test():
-    name_model_cur = get_current_model()
-
-    # return _query_send(f'select_object(.{name_model_cur}, "ns[rl]", "ac_spring")').decode()
-    return _query_send(f'DB_OBJ_EXISTS({name_model_cur}, "ac_spring")')
+    model_name = get_current_model()
+    
+    print(get_request_by_filter(model_name, '*velocity*'))
+    
+    return None
 
 
 
 if __name__=='__main__':
 
     pass
-
+    test()
+    
+    model_name = get_current_model()
     # set_default_cdb('T75E01')
-    # set_close_asy('D8UR_DW0536_full')
+    # set_close_asy(model_name)
     
     # test_query_element_model()
-     
-    
+    # print(_query_db_descendants(model_name, "request"))
+
