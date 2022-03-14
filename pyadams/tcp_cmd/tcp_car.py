@@ -1,6 +1,7 @@
 
 import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
 import pyadams.datacal.plot as adams_plot
+import tkinter as tk
 
 # help(tcmdf)
 # asfd
@@ -17,6 +18,7 @@ from pprint import pprint
 
 ACAR_FULL_BRAKE_PATH = "acar_full_brake_set.json"
 ACAR_FULL_STATIC_PATH = "acar_full_static_set.json"
+ACAR_REQUEST_PATH = "acar_request_set.json"
 
 
 # 字符串','分割, list非空字符
@@ -29,11 +31,26 @@ _name_range = lambda name,start,end=None: '.'.join([v for v in name.split('.') i
 _parse_datads_by_key = lambda data_dic, data_keys, key: [data_dic[data_key][key] for data_key in data_keys]
 
 
+
+# # json数据读取
+# def _json_read(set_path):
+#     with open(set_path, 'r') as f:
+#         data = json.load(f)
+#     return data
+
+
 # json数据读取
-def _json_read(set_path):
-    with open(set_path, 'r') as f:
-        data = json.load(f)
-    return data
+def _json_read(json_path):
+
+    lines = [] 
+    with open(json_path, 'r', encoding='utf-8') as f:
+        for line in f.readlines():
+            if line.strip().startswith('//'):
+                continue
+            lines.append(line)
+
+    return json.loads('\n'.join(lines))
+    
 
 
 # res后处理文件快速读取
@@ -321,7 +338,7 @@ def parse_tire_locs(tire_locs):
     left_tire_names = sorted(left_tire_locs.keys(), key=lambda v: left_tire_locs[v][0])
     
     Ls, Ws = {}, {}  
-    loc1 = 1
+    loc1 = 1 # 车轴数
     x_limit= 5
     last_name = right_tire_names[0]
     Ws[f"W-{loc1}-{last_name}"] = abs(right_tire_locs[last_name][1])*2
@@ -342,7 +359,7 @@ def parse_tire_locs(tire_locs):
     for left, right in zip(left_tire_names, right_tire_names):
         tire_names.extend([left, right])
     
-    return Ls, Ws, x_start, tire_names
+    return Ls, Ws, x_start, tire_names, loc1
     
 
 # 计算-静平衡计算
@@ -350,6 +367,7 @@ def parse_tire_locs(tire_locs):
 #  'mass': 10844.35,
 #  'I_center': [298688841.89, 1162890925.9, 1341023809.23],
 #  'm_center': [1749.05, -1.42, 415.45],
+#  'axle_num' : axle_num, # 车轴数
 #  'tire_forces': {'TR_Front_Tires.til_wheel': 3160.12,
 #                  'TR_Front_Tires.tir_wheel': 3145.06,
 #                  'TR_Rear_Tires.til_wheel': 4344.29,
@@ -396,11 +414,12 @@ def sim_static_only(data):
     locs[2] = locs[2]-road_z
     
     # 轮心坐标数据处理
-    Ls, Ws, x_start, tire_names = parse_tire_locs(tire_locs)
+    Ls, Ws, x_start, tire_names, axle_num = parse_tire_locs(tire_locs)
     locs[0] = locs[0] - x_start # X坐标校正
     
     vehicle_data = {
         'mass' : mass_data['mass'],
+        'axle_num' : axle_num, # 车轴数
         'I_center': I_center,
         'm_center': locs,
         'tire_names'  : tire_names,
@@ -570,16 +589,71 @@ def post_cur_brake(results):
 # pprint(results)
 # post_cur_brake(results)
 
+def get_request_frame_force(model_name):
+    
+    req_filter = _json_read(ACAR_REQUEST_PATH)
+    reqs = tcmdf.get_request_by_filter(model_name, req_filter['frame_force'])
+    # print(reqs)
+    return reqs
+
+def get_cur_request_frame_force():
+
+    model_name = tcmdf.get_current_model()
+    return get_request_frame_force(model_name)
+
+def tk_req_select(reqs):
+    
+    window = tk.Tk()    
+    n_frame = math.ceil(len(reqs)/20)
+    frames = [tk.Frame(window) for n in range(n_frame)]
+    for frame in frames:
+        frame.pack(side='left', fill=tk.X)
+    cb_list, var_list = [], []
+
+    new_frames = []
+    for loc, req in enumerate(reqs):
+        if loc%20==0: frame = frames.pop(0)
+        req = '.'.join(req.split('.')[-2:])
+        var_n = tk.BooleanVar()
+        cb_n = tk.Checkbutton(
+            frame, 
+            variable=var_n,
+            text=req, 
+            onvalue=True, 
+            offvalue=False) # , width=20
+        cb_n.pack(side='top', anchor='w') # side='left'
+        var_n.set(True)
+        cb_list.append(cb_n)
+        var_list.append(var_n)
+        new_frames.append(frame)
+
+    window.mainloop()
+    
+    values = [var.get() for var in var_list]
+    # window.destroy()
+    new_reqs = [req for req, v in zip(reqs, values) if v]
+    # print(window, var_list)
+    # print(new_reqs)
+    return new_reqs
+
+
+def test_req_select():
+    reqs = tk_req_select(get_cur_request_frame_force())
+    print(reqs)
+
+
 
 if __name__ == '__main__':
     pass
     
     
-    pprint(main_cur_static_preload())
+    # pprint(main_cur_static_preload())
     pprint(main_cur_static_only())
+    # test_req_select()
     # vehicle_data
    
     
+
 
 
 

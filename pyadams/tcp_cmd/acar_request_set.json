@@ -1,0 +1,4 @@
+{	
+	// 车架受力-request name filter
+	"frame_force" : "*_to_frame_force"
+}

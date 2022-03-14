@@ -1,4 +1,5 @@
 {
+    // 整车静平衡计算设置
 	"sim_name"  : "auto_sim",
     "mode"      : "interactive",
     "gear"      : 0,

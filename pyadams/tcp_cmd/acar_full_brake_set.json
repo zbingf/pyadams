@@ -1,4 +1,5 @@
 {
+    // 制动计算设置
 	"sim_name"  : "auto_sim",
     "t_end"  	: 10,
     "step"      : 1000,
@@ -10,8 +11,12 @@
     "requests"  : "chassis_displacements,chassis_displacements,chassis_displacements,chassis_velocities,chassis_accelerations",
     "components": "longitudinal,lateral,pitch,longitudinal,longitudinal",
     "comments"   : "x_dis, y_dis, pitch, velocity, x_acc",
+    // req单位
     "req_units" : "mm,mm,rad,velocity,g",
+    // 迭代目标最大加速度 g
     "target_g": 0.5,
+    // 迭代容差 g
     "target_tolerance_g" : 0.01,
+    // 初始车速选择
     "velocity_list" : "60,30"
 }
