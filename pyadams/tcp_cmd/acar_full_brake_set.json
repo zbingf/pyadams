@@ -8,11 +8,11 @@
     "t_start"	: 1,
     "gear"      : 1,
     "duration"  : 0.6,
-    "requests"  : "chassis_displacements,chassis_displacements,chassis_displacements,chassis_velocities,chassis_accelerations",
-    "components": "longitudinal,lateral,pitch,longitudinal,longitudinal",
-    "comments"   : "x_dis, y_dis, pitch, velocity, x_acc",
+    "requests"  : "chassis_displacements,chassis_displacements,chassis_displacements,chassis_displacements,chassis_velocities,chassis_accelerations",
+    "components": "longitudinal,lateral,vertical,pitch,longitudinal,longitudinal",
+    "comments"   : "x_dis, y_dis, z_dis, pitch, velocity, x_acc",
     // req单位
-    "req_units" : "mm,mm,rad,velocity,g",
+    "req_units" : "mm,mm,mm,rad,velocity,g",
     // 迭代目标最大加速度 g
     "target_g": 0.5,
     // 迭代容差 g

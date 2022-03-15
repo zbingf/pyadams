@@ -344,8 +344,10 @@ def get_sub_elem_minor(element_name):
 def get_testrig_road_marker_z(model_name):
 
     testrig_name_full = '.' + model_name + '.testrig.ground.std_tire_ref'
-    str1 = _query_send(f'{testrig_name_full}.loc')
-    return float(_str2list(str1)[-1])
+    # str1 = _query_send(f'{testrig_name_full}.loc')
+    # return float(_str2list(str1)[-1])
+    #
+    return get_marker_loc_global(testrig_name_full)[-1]
 
 # print(get_testrig_road_marker_z(get_current_model()))
 
@@ -397,10 +399,94 @@ def get_aggregate_mass(model_name):
     return mass_data
 
 
+# 获取marker的全局坐标LOC
+def get_marker_loc_global(marker):
+
+    return _str2list(_query_send(f'loc_global({{0,0,0}}, {marker})'))
+
+
+# 获取marker在全局方向ORI
+def get_marker_ori_global(marker):
+    
+    return _str2list(_query_send(f'ori_global({{0,0,0}}, {marker})'))    
+
+
 # 通过filter获取指定request
 def get_request_by_filter(model_name, filter_str):
     
     return _query_db_children_filter(model_name, "request", filter_str)
+
+
+# request 数据获取
+# REQUEST_TYPE 
+#     0: 'expr',
+#     4: 'force',
+def get_request_data_one(req):
+    result = {}
+    comp_names = _query_send(f'{req}.cnames')
+    result_name = _query_send(f'{req}.results_name')
+
+    req_type = _query_send(f'{req}.type')
+    if int(req_type) == 0 : # expr
+        # f2 = _query_send(f'{req}.f2')
+        # f2 = _query_send(f'{req}.f2.type')
+        exprs = []
+        ref_objs = []
+        for n in [1,2,3,4,5,6,7,8]:
+            f_expr = _query_send(f'{req}.f{n}.exprs')
+            if f_expr == 'No data from View': continue
+            exprs.append(f_expr)
+            ref_objs.append( _str2list(_query_send(f'{req}.f{n}.r_ref_objs')) )
+            
+        ref_objs_set = []
+        for ref_obj in ref_objs:
+            for ref_name in ref_obj:
+                if ref_name not in ref_objs_set:
+                    ref_objs_set.append(ref_name)
+                    
+        ref_dict = {}
+        for ref_name in ref_objs_set:
+            loc = get_marker_loc_global(ref_name)
+            ori = get_marker_ori_global(ref_name)
+            ref_dict[ref_name] = {'loc':loc, 'ori':ori}
+            
+            
+        result.update({
+            'type' : 'expr', 
+            'exprs' : exprs,  # 表达式
+            'ref_objs' : ref_objs, # 各表达式中的 marker
+            'ref_dict' : ref_dict, # 各marker对应的坐标&方向
+        })
+        # print(ref_dict)
+
+    if int(req_type) == 4: # force
+        i_marker = _query_send(f'{req}.i')
+        j_marker = _query_send(f'{req}.j')
+        rm_marker = _query_send(f'{req}.rm')
+        
+        i_loc = get_marker_loc_global(i_marker)
+        j_loc = get_marker_loc_global(j_marker)
+        rm_loc = get_marker_loc_global(rm_marker)
+        rm_ori = get_marker_ori_global(rm_marker)
+        
+        result.update({
+            'type': 'force',
+            'i_loc' : i_loc,
+            'j_loc' : j_loc,
+            'i_marker' : i_marker,
+            'j_marker' : j_marker,
+            'rm_marker' : rm_marker,
+            'rm_ori' : rm_ori,
+            'rm_loc' : rm_loc,
+        })
+        
+    result.update({
+        'result_name' : result_name,
+        'comp_names' : comp_names,
+        })
+
+    return result
+
 
 
 # ------------------------------------------------
@@ -852,11 +938,24 @@ def test_sim_full_static():
 
 
 
+
+
+
 def test():
     model_name = get_current_model()
+        
+    reqs = get_request_by_filter(model_name, '*frame_force*')
+    for req in reqs:
+        result = get_request_data_one(req)
+
+
+        # print(req, req_type, comp_names, attr)
     
-    print(get_request_by_filter(model_name, '*velocity*'))
-    
+    # print(req, req_type)
+    # f_req = reqs[-1]
+    # f_req_type = _query_send(f'{f_req}.type')
+    # print(f_req, f_req_type)
+
     return None
 
 
