@@ -3,11 +3,13 @@
     version： ADAMS 2017.1
 """
 
+# 标准库
 import os
 import copy
 import re
 from pprint import pprint
 
+# 自建库
 from pyadams.call import tcplink
 cmds_run = tcplink.cmds_run # 直接运行,未处理的多个命令行
 cmd_send = tcplink.cmd_send
@@ -81,6 +83,7 @@ acar toolkit database add &
  database_path="#cdb_path#"
 """
 
+
 # 添加数据库
 def set_add_cdb(cdb_name, cdb_path):
     new_cmd = _cmd_replace(CMD_ADD_CDB, cdb_name=cdb_name, cdb_path=cdb_path)
@@ -88,10 +91,12 @@ def set_add_cdb(cdb_name, cdb_path):
     return None
 
 
+# 设置默认数据库
 CMD_DEFAULT_CDB = """
 acar toolkit database default writable &
  database_name="#cdb_name#"
 """
+
 
 # 设置默认数据库
 def set_default_cdb(cdb_name):

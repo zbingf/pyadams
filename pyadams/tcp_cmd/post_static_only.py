@@ -1,9 +1,22 @@
+"""
+    static only
+    静态计算结果数据后处理
+"""
+
+# 标准库
+import os.path
+import getpass
+import time
+from pprint import pprint, pformat
+
+# 自建库
 import pyadams.tcp_cmd.tcp_car as tcp_car
 
-from pyadams.file import office_docx
-WordEdit = office_docx.WordEdit
 
-from pprint import pprint, pformat
+get_cur_time = lambda: time.strftime('%Y:%m:%d-%H:%M', time.localtime(time.time()))
+USER_NAME = getpass.getuser()
+RECORD_PATH = tcp_car.json_read(tcp_car.ACAR_FULL_STATIC_PATH)['record_path']
+
 
 # result:
 # {'Axles': {'TR_Front_Tires.til_wheel': 1,
@@ -31,18 +44,6 @@ from pprint import pprint, pformat
 #                 'TR_Rear_Tires.til_wheel',
 #                 'TR_Rear_Tires.tir_wheel']}
 
-# 后处理
-POST_STATIC = {
-    'model_name' : '模型名称',
-    'mass' : '整车质量',
-    'm_center' : '整车质心',
-    'I_center' : '整车绕质心转动惯量',
-    'Ls' : '轴距',
-    'Ws' : '轮距',
-    'axle_num' : '轴数',
-    'tire_forces' : '轮胎垂向力',
-    'tire_locs' : '轮胎中心坐标',
-}
 
 len_max_dict_key = lambda dict1: max([len(key) for key in dict1])
 str_list_e1 = lambda list1, prelist, istr='\n': istr.join([f'{p} : {v:0.3e} ' for p,v in zip(prelist, list1)])
@@ -110,8 +111,8 @@ def _str_Ws(result):
         lines.append(line)
     # print(lines)
     return '\n'.join(lines)
-    
-        
+
+
 # 质心
 def _str_m_center(result):
 
@@ -122,8 +123,24 @@ def _str_m_center(result):
     return '\n'.join([x_line, y_line, z_line])
 
 
+# 后处理
+POST_STATIC = {
+    'model_name' : '模型名称',
+    'mass' : '整车质量',
+    'm_center' : '整车质心',
+    'I_center' : '整车绕质心转动惯量',
+    'Ls' : '轴距',
+    'Ws' : '轮距',
+    'axle_num' : '轴数',
+    'tire_forces' : '轮胎垂向力',
+    'tire_locs' : '轮胎中心坐标',
+}
+
+
 # word 文档输出
-def word_cur_static_only_list(result):
+# old_list = 
+# ['$模型名称$', '$整车质量$', '$整车质心$', '$整车绕质心转动惯量$', '$轴距$', '$轮距$', '$轴数$', '$轮胎垂向力$', '$轮胎中心坐标$']
+def post_static_only(result):
 
     old_list, new_list = [], []
     for key in POST_STATIC:
@@ -151,22 +168,131 @@ def word_cur_static_only_list(result):
     return old_list, new_list
 
 
-def test_cur_static_only():
+def _csv_str_Ws(result):
+    data = result['Ws']
+    # print(data)
+    new_Ws = {}
+    for key in data:
+        str_num = key.split('-')[1]
+        if str_num not in new_Ws: new_Ws[str_num] = []
+        new_Ws[str_num].append(data[key])
+    # print(new_Ws)
+    lines = []
+    for num in new_Ws:
+        v_mean = sum(new_Ws[num])/len(new_Ws[num])
+        line = f'A{num}[{v_mean}]'
+        lines.append(line)
+
+    return ';'.join(lines)
+
+
+def csv_post_static_only(result):
+    old_list, new_list = [], []
+    for key in POST_STATIC:
+        if key == 'model_name':
+            str1 = result[key]
+            old_list.append(POST_STATIC[key])
+        
+        elif key == 'mass':
+            str1 = str(result[key])
+            old_list.append(POST_STATIC[key])
+
+        elif key == 'm_center':
+            str1 = ','.join([str(v) for v in result[key]])
+            old_list.append('x(距第1轴),y,z(离地高)')
+
+        elif key == 'I_center':
+            str1 = ','.join([str(v) for v in result[key]])
+            old_list.append('Ixx,Iyy,Izz')
+
+        elif key == 'Ls':
+            dict1 = result[key]
+            str1 = ';'.join([str(dict1[key1]) for key1 in dict1])
+            old_list.append(POST_STATIC[key])
+
+        elif key == 'Ws':
+            str1 = _csv_str_Ws(result)
+            old_list.append(POST_STATIC[key])
+
+        else:
+            continue
+
+        new_list.append(str1)
+
+    # print(old_list)
+    # print(new_list)
+    
+    old_list.append('时间')
+    new_list.append(get_cur_time())
+    
+    old_list.append('用户')
+    new_list.append(USER_NAME)
+
+    old_line = ','.join(old_list)
+    new_line = ','.join(new_list)
+
+    return old_line, new_line
+
+
+def csv_post_static_only_start(csv_path, result):
+
+    r_strs = csv_post_static_only(result)
+    # print(r_strs)
+    with open(csv_path, 'w') as f:
+        f.write('\n'.join(r_strs))
+        f.write('\n')
+
+
+def csv_post_static_only_append(csv_path, result):
+    r_strs = csv_post_static_only(result)
+    with open(csv_path, 'a') as f:
+        f.write(r_strs[-1])
+        f.write('\n')
+
+
+def csv_post_static_only_print(result):
+
+    if os.path.exists(RECORD_PATH):
+        csv_post_static_only_append(RECORD_PATH, result)
+        print('append')
+    else:
+        csv_post_static_only_start(RECORD_PATH, result)
+        print('new write')
+
+
+
+# ------------------------------------------------
+# ------------------------------------------------
+# --------------------TEST------------------------
+# ------------------------------------------------
+# ------------------------------------------------
+
+
+def test_cur_static_only_word():
+    from pyadams.file import office_docx
+    WordEdit = office_docx.WordEdit
 
     # word文档编辑 测试
     word_path = r'post_static_only.docx'
     new_word_path = r'new_post_static_only.docx'
 
-    result = tcp_car.main_cur_static_only()
-    pprint(result)
-    old_list, new_list = word_cur_static_only_list(result)
+    # result = tcp_car.main_cur_static_only()
+    # pprint(result)
+    # old_list, new_list = post_static_only(result)
 
-    word_obj = WordEdit(word_path)
-    word_obj.replace_edit(old_list, new_list)
-    word_obj.save(new_word_path)
-    word_obj.close()
+    # word_obj = WordEdit(word_path)
+    # word_obj.replace_edit(old_list, new_list)
+    # word_obj.save(new_word_path)
+    # word_obj.close()
+
+def test_cur_static_only_csv():
+
+    # csv_path = 'post_static_only.csv'
+    csv_post_static_only_print(result)
+
+
 
 
 if __name__=='__main__':
-	pass
-	test_cur_static_only()
+    pass
+    test_cur_static_only_csv()

@@ -1,24 +1,14 @@
-
-import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
-import pyadams.datacal.plot as adams_plot
-
-from pyadams.file import office_docx
-WordEdit = office_docx.WordEdit
-
-import tkinter as tk
-
-# help(tcmdf)
-# asfd
-from pyadams.file import result
-DataModel = result.DataModel
-
+# 标准库
 import json
 import re
 import math
-import os
 import copy
-
 from pprint import pprint, pformat
+
+# 自建库
+from pyadams.file import result
+DataModel = result.DataModel
+
 
 ACAR_FULL_BRAKE_PATH = "acar_full_brake_set.json"
 ACAR_FULL_STATIC_PATH = "acar_full_static_set.json"
@@ -26,25 +16,17 @@ ACAR_REQUEST_PATH = "acar_request_set.json"
 
 
 # 字符串','分割, list非空字符
-_str_split = lambda str1: [n.strip() for n in str1.split(',') if n]
+str_split = lambda str1: [n.strip() for n in str1.split(',') if n]
 
 # model名称字符串'.'分割, 并选取范围
-_name_range = lambda name,start,end=None: '.'.join([v for v in name.split('.') if v][start:end])
+name_range = lambda name,start,end=None: '.'.join([v for v in name.split('.') if v][start:end])
 
 # 获取data_dicts的key数据
-_parse_datads_by_key = lambda data_dic, data_keys, key: [data_dic[data_key][key] for data_key in data_keys]
-
-
-
-# # json数据读取
-# def _json_read(set_path):
-#     with open(set_path, 'r') as f:
-#         data = json.load(f)
-#     return data
+parse_datads_by_key = lambda data_dic, data_keys, key: [data_dic[data_key][key] for data_key in data_keys]
 
 
 # json数据读取
-def _json_read(json_path):
+def json_read(json_path):
 
     lines = [] 
     with open(json_path, 'r', encoding='utf-8') as f:
@@ -58,7 +40,7 @@ def _json_read(json_path):
 
 
 # res后处理文件快速读取
-def _res_read(name, name_res, res_path, reqs, comps, line_range=[4,None], isSamplerate=False):
+def res_read(name, name_res, res_path, reqs, comps, line_range=[4,None], isSamplerate=False):
     dataobj = DataModel(name)
     dataobj.new_file(res_path, name_res)
     dataobj[name_res].set_reqs_comps(reqs, comps)
@@ -76,7 +58,7 @@ def _res_read(name, name_res, res_path, reqs, comps, line_range=[4,None], isSamp
 
 
 # res后处理文件数据再次获取, 不重复读取
-def _res_read_again(name, name_res, reqs, comps, line_range=[4,None]):
+def res_read_again(name, name_res, reqs, comps, line_range=[4,None]):
     dataobj = DataModel(name)
     dataobj[name_res].set_reqs_comps(reqs, comps)
     dataobj[name_res].set_line_ranges(line_range)
@@ -88,7 +70,7 @@ def _res_read_again(name, name_res, reqs, comps, line_range=[4,None]):
 
 # res文件后处理,单位获取
 # 暂时停用
-def _res_units(res_path):
+def res_units(res_path):
     # <Units angle="rad" length="mm" mass="kg" time="sec" />
 
     f = open(res_path, 'r')
@@ -114,7 +96,7 @@ def _res_units(res_path):
     
 
 # 暂时停用
-def _angel_deg(units, list1):
+def angel_deg(units, list1):
     angle_unit = units['angle']
     if angle_unit == 'rad':
         return [v*180.0/math.pi for v in list1]
@@ -125,7 +107,7 @@ def _angel_deg(units, list1):
 
 # 批量编辑data_dic中的value(dict数据),指定key数据覆盖
 # data_dic { data_key:{key:value}, ... }
-def _edit_datads_by_key(data_dic, data_keys, key, values):
+def edit_datads_by_key(data_dic, data_keys, key, values):
     assert len(data_dic) == len(values), "error: len(data_dic) != len(values)"
     new_data_dic = copy.deepcopy(data_dic)
     
@@ -137,8 +119,8 @@ def _edit_datads_by_key(data_dic, data_keys, key, values):
 
 # car_comps组合
 # car_names 指定key排序
-def _parse_comps(datads, data_keys, comp='force'):
-    minors = _parse_datads_by_key(datads, data_keys, 'minor')
+def parse_comps(datads, data_keys, comp='force'):
+    minors = parse_datads_by_key(datads, data_keys, 'minor')
     comps = []
     for minor in minors:
         if minor=='any':
@@ -164,7 +146,7 @@ def parse_I_center(mass_data):
 # ---dict calc---
 
 # dict处理, 获取字典指定位置的数据, 字典数据需均为list
-def _parase_dic_loc(result_dic, loc):
+def parase_dic_loc(result_dic, loc):
     new_data = {}
     for key in result_dic:
         new_data[key] = result_dic[key][loc]
@@ -172,7 +154,7 @@ def _parase_dic_loc(result_dic, loc):
 
 
 # dict处理, 字典中均为数值, dic1 - dic2
-def _parase_dic_sub(dic1, dic2):
+def parase_dic_sub(dic1, dic2):
     new_dic = {}
     for key in dic1:
         new_dic[key] = dic1[key] - dic2[key]
@@ -180,7 +162,7 @@ def _parase_dic_sub(dic1, dic2):
 
 
 # dict处理, 舍去loc之前数据, 并减去loc位置的数据
-def _parase_dic_init_loc(dic1, loc):
+def parase_dic_init_loc(dic1, loc):
     new_dic = {}
     for key in dic1:
         line = dic1[key]
@@ -191,7 +173,7 @@ def _parase_dic_init_loc(dic1, loc):
 
 
 # dict处理, 对指定key中的list数据求绝对值
-def _parase_dic_abs_key(dic1, key):
+def parase_dic_abs_key(dic1, key):
     dic2 = copy.deepcopy(dic1)
     dic2[key] = [abs(v) for v in dic2[key]]
     return dic2
@@ -234,458 +216,6 @@ def round_data_dict(data_dic, new_dic, n):
     return new_dic
         
 
-
-# ------------------------------------------------
-# ------------------------------------------------
-# --------------------SIM-SPRING-PRELOAD----------
-# ------------------------------------------------
-# ------------------------------------------------
-
-# 计算-静平衡弹簧预载调整
-def sim_static_spring_preload(data):
-    
-    model_name = data['model_name']
-    preload_path = os.path.abspath(data['preload_path']) #.replace('\\', '/')
-    
-    springs = tcmdf.get_model_nspring_datas(model_name)
-    if springs==False: return False
-    n_spring = len(springs)
-    spring_names = list(springs.keys())
-    
-    reqs = _parse_datads_by_key(springs, spring_names, 'req_name')
-    comps = _parse_comps(springs, spring_names, 'force')
-    comps_dis = _parse_comps(springs, spring_names, 'displacement')
-    
-    # -------------------
-    # 弹簧预载初始化
-    new_springs = _edit_datads_by_key(springs, spring_names, 'type', ['preload']*n_spring)
-    new_springs = _edit_datads_by_key(new_springs, spring_names, 'value', [0]*n_spring)
-    new_springs = _edit_datads_by_key(new_springs, spring_names, 'symmetric', [False]*n_spring)
-    new_springs = _edit_datads_by_key(new_springs, spring_names, 'path', [preload_path]*n_spring)
-    
-    for key in new_springs: tcmdf.set_spring(new_springs[key])
-    
-    # -------------------    
-    # 静态计算
-    result_static = tcmdf.sim_car_full_static(data)
-    res_path = result_static['res_path']
-    
-    result_data, _ = _res_read('sim_full_static', 'static', res_path, reqs, comps, line_range=None)
-    spring_values = [line[-1] for line in result_data]
-    # print(spring_values)
-    
-    # -------------------
-    # 弹簧校正
-    new_springs_02 = _edit_datads_by_key(springs, spring_names, 'type', ['preload']*n_spring)
-    new_springs_02 = _edit_datads_by_key(new_springs_02, spring_names, 'value', spring_values)
-    new_springs_02 = _edit_datads_by_key(new_springs_02, spring_names, 'symmetric', [False]*n_spring)
-    
-    new_spring_edits = []
-    for key in new_springs_02: 
-        tcmdf.set_spring(new_springs_02[key])
-        new_spring_edits.append(tcmdf.parse_spring(new_springs_02[key]))
-        
-        
-    result_static = tcmdf.sim_car_full_static(data)
-    res_path = result_static['res_path']
-    result_data, _ = _res_read('sim_full_static', 'static', res_path, reqs, comps_dis, line_range=None)
-    spring_lengths = [line[-1] for line in result_data]
-    # print(spring_length)
-    
-    # print('\n'.join(new_spring_edits))
-    
-    output_data = {
-        'spring_names'   : [_name_range(name,1) for name in spring_names],
-        'spring_values'  : {_name_range(name,1):value for name, value in zip(spring_names, spring_values)},
-        'spring_lengths' : {_name_range(name,1):value for name, value in zip(spring_names, spring_lengths)},
-        'cmd'           : '\n'.join(new_spring_edits),
-        }
-    
-    return output_data
-
-
-# 主程序-当前-静平衡弹簧预载调整
-def main_cur_static_preload():
-
-    data = _json_read(ACAR_FULL_STATIC_PATH)
-    data['model_name'] = tcmdf.get_current_model()
-    # print(sim_static_spring_preload(data))
-    return sim_static_spring_preload(data)
-
-
-# ------------------------------------------------
-# ------------------------------------------------
-# --------------------SIM-STATIC-ONLY-------------
-# ------------------------------------------------
-# ------------------------------------------------
-
-
-_str_name_end = lambda str1: str1.split('.')[-1]
-
-# 解析轮胎中心坐标数据
-# 输入:tire_locs
-# {
-#  'msc_truck_drive_wheels.til_inside_wheel': [7405.9,-693.45,758.4],
-#  'msc_truck_drive_wheels.til_outside_wheel': [7405.9, -1040.2,758.4],
-#  'msc_truck_drive_wheels.tir_inside_wheel': [7405.9,693.45,758.4],
-#  'msc_truck_drive_wheels.tir_outside_wheel': [7405.9,1040.2,758.4],
-# }
-# 输出
-# Ls dict, 轴距
-# Ws dict, 轮距
-# x_start 第一轴 X 坐标
-# tire_names list 排序后的名称,先左再右
-def parse_tire_locs(tire_locs):
-
-    # 右侧数据, 排序
-    right_tire_locs = {key:tire_locs[key] for key in tire_locs if tire_locs[key][1]>0}
-    right_tire_names = sorted(right_tire_locs.keys(), key=lambda v: right_tire_locs[v][0])
-    
-    # 左侧数据, 排序
-    left_tire_locs = {key:tire_locs[key] for key in tire_locs if tire_locs[key][1]<0}
-    left_tire_names = sorted(left_tire_locs.keys(), key=lambda v: left_tire_locs[v][0])
-    
-    # 轴距和轮距
-    Ls, Ws, Axles = {}, {}, {}
-    axle_num = 1 # 车轴数
-    x_limit= 5   # X距离容差
-
-    # 右侧为准
-    last_name = right_tire_names[0]
-    Ws[f"W-{axle_num}-{last_name}"] = abs(right_tire_locs[last_name][1])*2
-    Axles[left_tire_names[0]], Axles[right_tire_names[0]] = axle_num, axle_num
-    for n in range(1, len(right_tire_names)): 
-        cur_name = right_tire_names[n]
-        dx = right_tire_locs[cur_name][0] - right_tire_locs[last_name][0]
-        if abs(dx) > x_limit: 
-            Ls[f"L-{axle_num}-{axle_num+1}"] = dx
-            axle_num += 1
-        
-        Axles[left_tire_names[n]], Axles[right_tire_names[n]] = axle_num, axle_num
-        Ws[f"W-{axle_num}-{cur_name}"] = abs(right_tire_locs[cur_name][1])*2
-        last_name = cur_name
-        
-    # 第一轴 X 坐标
-    x_start = right_tire_locs[right_tire_names[0]][0]
-        
-    tire_names = []
-    for left, right in zip(left_tire_names, right_tire_names):
-        tire_names.extend([left, right])
-    
-    output = {
-        'Ls': Ls,
-        'Ws': Ws,
-        'x_start': x_start,
-        'tire_names': tire_names,
-        'axle_num': axle_num,
-        'Axles': Axles,
-    }
-
-    return output
-    
-
-# 计算-静平衡计算
-# 输入
-# {'gear': 0,
-#  'mode': 'interactive',
-#  'model_name': 'MDI_Demo_Vehicle',
-#  'preload_path': 'acar_full_static_preload_01.spr',
-#  'sim_name': 'auto_sim',
-#  'sim_type': 'settle'}
-# 输出
-# {'Axles': {'TR_Front_Tires.til_wheel': 1,
-#            'TR_Front_Tires.tir_wheel': 1,
-#            'TR_Rear_Tires.til_wheel': 2,
-#            'TR_Rear_Tires.tir_wheel': 2},
-#  'I_center': [298688841.89, 1162890925.9, 1341023809.23],
-#  'Ls': {'L-1-2': 2560.0},
-#  'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,
-#         'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
-#  'axle_num': 2,
-#  'm_center': [1482.05, -1.42, 415.45],
-#  'mass': 1527.68,
-#  'model_name': 'MDI_Demo_Vehicle',
-#  'tire_forces': {'TR_Front_Tires.til_wheel': 3159.3,
-#                  'TR_Front_Tires.tir_wheel': 3145.1,
-#                  'TR_Rear_Tires.til_wheel': 4345.73,
-#                  'TR_Rear_Tires.tir_wheel': 4331.3},
-#  'tire_locs': {'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
-#                'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
-#                'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
-#                'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]},
-#  'tire_names': ['TR_Front_Tires.til_wheel',
-#                 'TR_Front_Tires.tir_wheel',
-#                 'TR_Rear_Tires.til_wheel',
-#                 'TR_Rear_Tires.tir_wheel']}
-def sim_static_only(data):
-
-    model_name = data['model_name']
-    
-    # -------------------    
-    result_static = tcmdf.sim_car_full_static(data) # 静态计算
-    res_path = result_static['res_path']
-    
-    mass_data = tcmdf.get_aggregate_mass(model_name)
-    road_z = tcmdf.get_testrig_road_marker_z(model_name) # 必须计算后再测量路面高
-    tire_datas = tcmdf.get_model_tire_data(model_name)
-    
-    tire_names = list(tire_datas.keys())
-    reqs  = _parse_datads_by_key(tire_datas, tire_names, 'req_name')
-    comps = _parse_comps(tire_datas, tire_names, 'normal')
-    
-    result_data, _ = _res_read('sim_full_static_only', 'static_only', res_path, reqs, comps, line_range=None)
-    tire_values = [line[-1] for line in result_data]
-    # print(tire_values)
-    
-    tire_forces = {_name_range(name,1):value for name, value in zip(tire_names, tire_values)}
-    tire_locs   = {_name_range(name,1):tire_datas[name]['loc'] for name in tire_names}
-    
-    # ---------------
-    # 转动惯量, 质心高
-    I_center = parse_I_center(mass_data)
-    locs = mass_data['loc']
-    locs[2] = locs[2]-road_z
-    
-    # 轮心坐标数据处理
-    # Ls, Ws, x_start, tire_names, axle_num, Axles = parse_tire_locs(tire_locs)
-    tire_data = parse_tire_locs(tire_locs)
-    tire_names = tire_data['tire_names']
-
-    locs[0] = locs[0] - tire_data['x_start'] # X坐标校正
-
-    vehicle_data = {
-        'model_name' : model_name,  # 模型名称
-        'mass' : mass_data['mass'], 
-        'axle_num' : tire_data['axle_num'],      # 车轴数
-        'I_center': I_center,
-        'm_center': locs,
-        'tire_names'  : tire_names, # 有序列表
-        'tire_forces' : {tire_name:tire_forces[tire_name] for tire_name in tire_names}, # 有序
-        'tire_locs'   : {tire_name:tire_locs[tire_name] for tire_name in tire_names}, # 有序
-        'Ls' : tire_data['Ls'],
-        'Ws' : tire_data['Ws'],
-        'Axles': tire_data['Axles'], # 轮胎所属车轴
-    }
-    
-    return vehicle_data
-    
-
-# 仅静态计算
-def main_cur_static_only():
-
-    data = _json_read(ACAR_FULL_STATIC_PATH)
-    data['model_name'] = tcmdf.get_current_model()
-    vehicle_data = round_data_dict(sim_static_only(data), {}, 2) # 保留2位数据
-    # pprint(round_data_dict({"a":vehicle_data, "b":{"b1":vehicle_data, 'b2':vehicle_data}}, {}, 1))
-    
-    return vehicle_data
-
-
-# ------------------------------------------------
-# ------------------------------------------------
-# --------------------SELECT-REQ------------------
-# ------------------------------------------------
-# ------------------------------------------------
-
-# req-车架受力
-def get_request_frame_force(model_name):
-    
-    req_filter = _json_read(ACAR_REQUEST_PATH)
-    reqs = tcmdf.get_request_by_filter(model_name, req_filter['frame_force'])
-    # print(reqs)
-    return reqs
-
-
-# req-车架受力-当前模型
-def get_cur_request_frame_force():
-
-    model_name = tcmdf.get_current_model()
-    return get_request_frame_force(model_name)
-
-
-# 选择目标req
-def tk_req_select(reqs):
-    
-    window = tk.Tk()    
-    n_frame = math.ceil(len(reqs)/20)
-    frames = [tk.Frame(window) for n in range(n_frame)]
-    for frame in frames:
-        frame.pack(side='left', fill=tk.X)
-    cb_list, var_list = [], []
-
-    new_frames = []
-    for loc, req in enumerate(reqs):
-        if loc%20==0: frame = frames.pop(0)
-        req = '.'.join(req.split('.')[-2:])
-        var_n = tk.BooleanVar()
-        cb_n = tk.Checkbutton(
-            frame, 
-            variable=var_n,
-            text=req, 
-            onvalue=True, 
-            offvalue=False) # , width=20
-        cb_n.pack(side='top', anchor='w') # side='left'
-        var_n.set(True)
-        cb_list.append(cb_n)
-        var_list.append(var_n)
-        new_frames.append(frame)
-
-    window.mainloop()
-    
-    values = [var.get() for var in var_list]
-    # window.destroy()
-    new_reqs = [req for req, v in zip(reqs, values) if v]
-    # print(window, var_list)
-    # print(new_reqs)
-    return new_reqs
-
-
-# 选择当前
-def tk_select_cur_res_frame_force():
-
-    return tk_req_select(get_cur_request_frame_force())
-
-
-# ------------------------------------------------
-# ------------------------------------------------
-# --------------------SIM-BRAKE-------------------
-# ------------------------------------------------
-# ------------------------------------------------
-
-# 单个制动仿真
-# 返回制动数据
-def sim_brake_single(params):
-
-    result = tcmdf.sim_car_full_brake(params)
-
-    res_path = result['res_path']
-    reqs = _str_split(params['requests'])
-    comps = _str_split(params['components'])
-    comments = _str_split(params['comments'])
-    req_units = _str_split(params['req_units'])
-
-    # res_units = _res_units(res_path)
-
-    brake_start_loc = params['t_start'] * params['step'] / params['t_end']
-    brake_start_loc = int(brake_start_loc)-1
-
-    init_v = int(params['velocity'])
-    name_single = f'brake_{init_v}'
-    data, samplerate = _res_read('sim_full_brake', name_single, 
-        res_path, reqs, comps, isSamplerate=True)
-
-    result_dic = {}
-    for line, comment, req_unit in zip(data, comments, req_units):
-        if req_unit == 'rad':
-            result_dic[comment] = [n*180/math.pi for n in line]
-            continue
-        result_dic[comment] = line
-
-    # start_dic = _parase_dic_loc(result_dic, brake_start_loc)
-    # end_dic   = _parase_dic_loc(result_dic, -1)
-    
-    new_result_dic = _parase_dic_init_loc(result_dic, brake_start_loc)
-    new_result_dic['x_acc'] = result_dic['x_acc'][brake_start_loc:]       # 加速度, 不取相对值
-    new_result_dic['velocity'] = result_dic['velocity'][brake_start_loc:] #   速度, 不取相对值
-    dend_dic = _parase_dic_loc(new_result_dic, -1)
-
-    # x_dis, y_dis, velocity = data[0], data[1], data[3]
-    # pitch = _angel_deg(res_units, data[2])
-
-    # return {'x_dis':x_dis, 'y_dis':y_dis, 'pitch':pitch, 'velocity':velocity}
-    return dend_dic, new_result_dic, samplerate, result_dic
-
-
-# 当前-模型制动仿真
-# 包含紧急制动及目标加速度的制动迭代
-# 指定踏板深度计算
-# results[int(velocity)] = {
-#     "params": data,      # 对应参数
-#     "dend": dend_n,       # 紧急制动, 结束位置的数据
-#     "result": result_n,   # 紧急制动, 开始制动之后的数据
-#     "result_total": result_total_n, # 紧急制动, 完整数据
-#     "dend_t": dend_t,     # 目标加速度制动, 结束位置的数据
-#     "result_t": result_t, # 目标加速度制动, 开始制动之后的数据
-#     "result_total_t": result_total_t, # 目标加速度制动, 完整数据
-#     "brake_t": brake_t,  # 目标加速度制动
-#     "g_t": data['target_g'], # 目标加速度
-#     "samplerate": samplerate, # 采样Hz
-#     }
-def sim_cur_brake():
-
-    abs_min_acc = lambda result: abs(min(result['x_acc']))
-
-    model_name = tcmdf.get_current_model()
-
-    data = _json_read(ACAR_FULL_BRAKE_PATH)
-
-    velocity_list = [float(v) for v in data['velocity_list'].split(',') if v]
-
-    data['model_name'] = model_name
-    
-    target_tolerance_g = data['target_tolerance_g']
-    target_g = data['target_g']
-
-    
-    def ite_run(data, last_acc, gain=0.8, n_ite=10):
-        # 迭代仿真
-        cur_brake = 100 / last_acc * target_g
-        d_brake = 100 / last_acc * gain
-        for calc_n in range(n_ite):
-            data['brake'] = cur_brake
-            dend_dic, result, samplerate, result_total = sim_brake_single(data)
-            cur_acc = abs_min_acc(result)
-
-            # print('d_acc: ')
-            if abs(target_g - cur_acc) < target_tolerance_g:  
-                # print('符合计算')
-                break
-                
-            # d_brake = (last_brake-cur_brake) / (last_acc - cur_acc)
-            last_brake, last_acc = cur_brake, cur_acc
-            cur_brake = last_brake + d_brake*(target_g - cur_acc) 
-        return dend_dic, result, cur_brake, result_total
-
-    results = {}
-    for velocity in velocity_list:
-        # 紧急制动
-        data['brake'] = 100    
-        data['sim_name'] = f'v{int(velocity)}'
-        data['velocity'] = velocity
-        dend_n, result_n, samplerate, result_total_n = sim_brake_single(data)
-
-        # 目标加速度, 迭代仿真
-        data['sim_name'] = data['sim_name'] + '_limit'
-        last_acc = abs_min_acc(result_n)
-        dend_t, result_t, brake_t, result_total_t = ite_run(data, last_acc)
-        
-        results[int(velocity)] = {
-            "params": copy.deepcopy(data),      # 对应参数
-            "dend": dend_n,       # 紧急制动, 结束位置的数据
-            "result": result_n,   # 紧急制动, 开始制动之后的数据
-            "result_total": result_total_n, # 紧急制动, 完整数据
-            "dend_t": dend_t,     # 目标加速度制动, 结束位置的数据
-            "result_t": result_t, # 目标加速度制动, 开始制动之后的数据
-            "result_total_t": result_total_t, # 目标加速度制动, 完整数据
-            "brake_t": brake_t,  # 目标加速度制动
-            "g_t": data['target_g'], # 目标加速度
-            "samplerate": samplerate, # 采样Hz
-            }
-
-    # print(results)
-    return results
-
-
-# ------------------------------------------------
-# ------------------------------------------------
-# --------------------TEST------------------------
-# ------------------------------------------------
-# ------------------------------------------------
-
-
-def test_req_select():
-    reqs = tk_req_select(get_cur_request_frame_force())
-    print(reqs)
 
 
 

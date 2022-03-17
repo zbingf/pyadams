@@ -1,0 +1,16 @@
+{
+	// 制动设置
+    "auto_brake" : {
+	    "word_path": "post_brake.docx",
+	    "new_word_path": "new_post_brake.docx"
+    },
+    
+    // 弹簧预载设置
+    "auto_spring_preload": {
+    	"cmd_path":"post_spring_preload.cmd"
+    },
+    
+    // 图片类型
+    "figure_types" : ["jpg", "png"]
+
+}

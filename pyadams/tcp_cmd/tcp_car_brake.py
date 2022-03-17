@@ -1,0 +1,195 @@
+"""
+    TCP-CAR
+    SIM-BRAKE
+"""
+
+# 标准库
+import math
+import copy
+# from pprint import pprint, pformat
+
+# 自建库
+from pyadams.tcp_cmd.tcp_car import *
+import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
+
+
+
+# 单个制动仿真
+# 返回制动数据
+# 输入
+# {'brake': 100,
+#  'brake_max': 100,
+#  'comments': 'x_dis, y_dis, z_dis, pitch, velocity, x_acc',
+#  'components': 'longitudinal,lateral,vertical,pitch,longitudinal,longitudinal',
+#  'duration': 0.6,
+#  'gainit': 0.8,
+#  'gear': 1,
+#  'maxit': 5,
+#  'mode': 'interactive',
+#  'model_name': 'MDI_Demo_Vehicle',
+#  'req_units': 'mm,mm,mm,rad,velocity,g',
+#  'requests': 'chassis_displacements,chassis_displacements,chassis_displacements,chassis_displacements,chassis_velocities,chassis_accelerations',
+#  'sim_name': 'v60',
+#  'steer': 'locked',
+#  'step': 1000,
+#  't_end': 10,
+#  't_start': 1,
+#  'target_g': 0.5,
+#  'target_tolerance_g': 0.05,
+#  'velocity': 60.0,
+#  'velocity_list': '60,30'}
+# 
+# 输出
+# dend_dic 计算后的末位状态
+# {'pitch': 2.5,        相对开始制动时的状态
+#  'velocity': 4.6,     不取相对值
+#  'x_acc': -1.0,       不取相对值
+#  'x_dis': 15396.0,    相对开始制动时的状态
+#  'y_dis': 16.0,       相对开始制动时的状态
+#  'z_dis': 25.5        相对开始制动时的状态
+# }
+# new_result_dic 
+# {'pitch': [..],       时域, 相对开始制动时的状态
+#  'velocity': [..],    时域, 不取相对值
+#  'x_acc': [..],       时域, 不取相对值
+#  'x_dis': [..],       时域, 相对开始制动时的状态
+#  'y_dis': [..],       时域, 相对开始制动时的状态
+#  'z_dis': [..]        时域, 相对开始制动时的状态
+# }
+# samplerate 采样频率
+# result_dic 格式与new_result_dic一致, 数据为未处理状态
+def sim_brake_single(params):
+
+    # 仿真调用
+    result = tcmdf.sim_car_full_brake(params)
+    res_path = result['res_path']
+    
+    # 后处理数据读取
+    reqs = str_split(params['requests'])
+    comps = str_split(params['components'])
+    comments = str_split(params['comments'])
+    req_units = str_split(params['req_units'])
+    # res_units = res_units(res_path)
+
+    brake_start_loc = params['t_start'] * params['step'] / params['t_end']
+    brake_start_loc = int(brake_start_loc)-1
+
+    init_v = int(params['velocity'])
+    name_single = f'brake_{init_v}'
+    data, samplerate = res_read('sim_full_brake', name_single, 
+        res_path, reqs, comps, isSamplerate=True)
+
+    result_dic = {}
+    for line, comment, req_unit in zip(data, comments, req_units):
+        if req_unit == 'rad':
+            result_dic[comment] = [n*180/math.pi for n in line]
+            continue
+        result_dic[comment] = line
+
+    # start_dic = parase_dic_loc(result_dic, brake_start_loc)
+    # end_dic   = parase_dic_loc(result_dic, -1)
+    
+    new_result_dic = parase_dic_init_loc(result_dic, brake_start_loc)
+    new_result_dic['x_acc'] = result_dic['x_acc'][brake_start_loc:]       # 加速度, 不取相对值
+    new_result_dic['velocity'] = result_dic['velocity'][brake_start_loc:] #   速度, 不取相对值
+    dend_dic = parase_dic_loc(new_result_dic, -1)
+
+    # x_dis, y_dis, velocity = data[0], data[1], data[3]
+    # pitch = angel_deg(res_units, data[2])
+
+    # return {'x_dis':x_dis, 'y_dis':y_dis, 'pitch':pitch, 'velocity':velocity}
+    return dend_dic, new_result_dic, samplerate, result_dic
+
+
+# 当前-模型制动仿真
+# 包含紧急制动及目标加速度的制动迭代
+# 指定踏板深度计算
+# 
+# 输出
+# results[int(velocity)] = {
+#     "params": copy.deepcopy(data),      # 对应参数
+#     "dend": dend_n,                     # 紧急制动, result的结束状态
+#     "result": result_n,                 # 紧急制动, 相对开始制动时的状态(速度和加速度绝对值)
+#     "result_total": result_total_n,     # 紧急制动, 完整数据, 未处理
+#     "dend_t": dend_t,                   # 目标加速度制动, result_t的结束状态
+#     "result_t": result_t,               # 目标加速度制动, 相对开始制动时的状态(速度和加速度绝对值)
+#     "result_total_t": result_total_t,   # 目标加速度制动, 完整数据, 未处理
+#     "brake_t": brake_t,                 # 目标加速度制动
+#     "g_t": data['target_g'],            # 目标加速度
+#     "samplerate": samplerate,           # 采样Hz
+#     }
+def sim_cur_brake():
+
+    abs_min_acc = lambda result: abs(min(result['x_acc']))
+
+    model_name = tcmdf.get_current_model()
+
+    data = json_read(ACAR_FULL_BRAKE_PATH) # 计算参数
+
+    velocity_list = [float(v) for v in data['velocity_list'].split(',') if v]
+
+    data['model_name'] = model_name
+    
+    target_tolerance_g = data['target_tolerance_g']
+    target_g = data['target_g']
+    brake_max = data['brake_max']
+    maxit = data['maxit'] # 最大迭代次数
+    gainit = data['gainit'] # 迭代增益 0.8
+    
+    def ite_run(data, last_acc, gain=gainit, n_ite=maxit):
+        # 迭代仿真
+        cur_brake = 100 / last_acc * target_g
+        d_brake = 100 / last_acc * gain
+        for calc_n in range(n_ite):
+            data['brake'] = cur_brake
+            dend_dic, result, samplerate, result_total = sim_brake_single(data)
+            cur_acc = abs_min_acc(result)
+
+            # print('d_acc: ')
+            if abs(target_g - cur_acc) < target_tolerance_g:  
+                # print('符合计算')
+                break
+                
+            # d_brake = (last_brake-cur_brake) / (last_acc - cur_acc)
+            last_brake, last_acc = cur_brake, cur_acc
+            cur_brake = last_brake + d_brake*(target_g - cur_acc) 
+
+        return dend_dic, result, cur_brake, result_total
+
+    results = {}
+    for velocity in velocity_list:
+        # 紧急制动
+        data['brake'] = brake_max   # 100
+        data['sim_name'] = f'v{int(velocity)}'
+        data['velocity'] = velocity
+        dend_n, result_n, samplerate, result_total_n = sim_brake_single(data)
+
+        # 目标加速度, 迭代仿真
+        data['sim_name'] = data['sim_name'] + '_limit'
+        last_acc = abs_min_acc(result_n)
+        dend_t, result_t, brake_t, result_total_t = ite_run(data, last_acc)
+        
+        results[int(velocity)] = {
+            "params": copy.deepcopy(data),      # 对应参数
+            "dend": dend_n,                     # 紧急制动, result的结束状态
+            "result": result_n,                 # 紧急制动, 相对开始制动时的状态(速度和加速度绝对值)
+            "result_total": result_total_n,     # 紧急制动, 完整数据, 未处理
+            "dend_t": dend_t,                   # 目标加速度制动, result_t的结束状态
+            "result_t": result_t,               # 目标加速度制动, 相对开始制动时的状态(速度和加速度绝对值)
+            "result_total_t": result_total_t,   # 目标加速度制动, 完整数据, 未处理
+            "brake_t": brake_t,                 # 目标加速度制动
+            "g_t": data['target_g'],            # 目标加速度
+            "samplerate": samplerate,           # 采样Hz
+            }
+
+    # print(results)
+    return results
+
+
+
+if __name__=='__main__':
+    pass
+    result = sim_cur_brake()
+    # pprint(result)
+    # help(sim_static_spring_preload)
+
