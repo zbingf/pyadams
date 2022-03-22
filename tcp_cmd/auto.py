@@ -2,23 +2,30 @@
     AUTO
     
 """
-
-from pyadams.tcp_cmd import \
-    tcp_car, \
-    tcp_car_brake, \
-    tcp_car_static_only, \
-    tcp_car_spring_preload, \
-    post_brake, \
-    post_static_only
-
-from pyadams.file import office_docx
-WordEdit = office_docx.WordEdit
-
+# 标准库
 import os
 import tkinter.messagebox
 
+
+# 自建库
+import tcp_car
+import tcp_car_brake
+import tcp_car_static_only
+import tcp_car_spring_preload
+import post_brake
+import post_static_only
+
+import office_docx
+WordEdit = office_docx.WordEdit
+
+
+FILEDIR = os.path.dirname(os.path.abspath(__file__))
+
+# AUTO_SET_PATH = './00_set/auto_set.json'
+AUTO_SET_PATH = os.path.abspath(os.path.join(FILEDIR, '00_set/auto_set.json'))
+
 json_read = tcp_car.json_read
-AUTO_SET = json_read('auto.json')
+AUTO_SET = json_read(AUTO_SET_PATH)
 
 
 # 若文件存在则家后缀
@@ -34,6 +41,7 @@ def set_new_path(path):
             break
 
     return cur_path
+
 
 def get_file_type(path):
     return path.split('.')[-1]
@@ -51,23 +59,23 @@ class AutoCur:
         pass
         self.word_edits = [] # 存放word编辑数据
 
-    # static仿真
-    def sim_static(self):
+    # static 仿真
+    def sim_static(self, **params_replace):
         # 静态计算
-        self.result_static = tcp_car_static_only.main_cur_static_only()
+        self.result_static = tcp_car_static_only.main_cur_static_only(**params_replace)
 
     # brake仿真
     def sim_brake(self):
 
         self.result_brake = tcp_car_brake.sim_cur_brake()
 
-    # static_preload
-    def sim_spring_preload(self):
+    # static 仿真 spring preload
+    def sim_spring_preload(self, **params_replace):
         
-        self.result_spring_preload = tcp_car_spring_preload.main_cur_static_preload()
+        self.result_spring_preload = tcp_car_spring_preload.main_cur_static_preload(**params_replace)
         res_path = self.result_spring_preload['res_path']
         
-        self.result_static = tcp_car_static_only.main_cur_static_only(res_path)
+        self.result_static = tcp_car_static_only.main_cur_static_only(res_path, **params_replace)
 
     # static数据编辑目标
     def post_static_list(self):
@@ -119,45 +127,79 @@ class AutoCur:
         remove_figs(target_paths)
 
     # csv数据记录
-    def record_static(self):
+    def record_static(self, record_state=1):
+        if record_state==0: # 不记录
+            return None
+        elif record_state==1: # 记录
+            pass
+        elif record_state==2: # 询问
+            if not tkinter.messagebox.askyesno('提问', '是否上传整车静态数据?'):
+                return None
 
         post_static_only.csv_post_static_only_print(self.result_static)
+        return True
 
-    # 提问是否-csv数据记录
-    def ask_record_static(self):
-        if tkinter.messagebox.askyesno('提问', '是否上传整车静态数据?'):
-            self.record_static()
+    # # 提问是否-csv数据记录
+    # def ask_record_static(self):
+    #     if tkinter.messagebox.askyesno('提问', '是否上传整车静态数据?'):
+    #         self.record_static()
 
 
-def auto_brake():
+def auto_brake(record_state=1, params_static_replace=None):
+    """
+        制动稳定性分析
+    """
 
     word_path = AUTO_SET['auto_brake']['word_path']
     new_word_path = set_new_path(AUTO_SET['auto_brake']['new_word_path'])
 
     obj = AutoCur()
-    obj.sim_static()
+    if params_static_replace==None:
+        obj.sim_static()
+    else:
+        obj.sim_static(**params_static_replace)
     obj.sim_brake()
     obj.post_static_list()
     obj.post_brake_list()
     obj.word_edit(word_path, new_word_path)
-    obj.ask_record_static()
+    obj.record_static(record_state)
     obj.remove_figs()
 
 
-def auto_static_only():
+def auto_static_only(record_state=1, **params_replace):
+    """
+        自动
+        静态分析
+    """
     obj = AutoCur()
-    obj.sim_static()
-    obj.ask_record_static()
+    obj.sim_static(**params_replace)
+    obj.record_static(record_state)
 
 
-def auto_spring_preload():
+def auto_spring_preload(record_state=1, **params_replace):
+    """
+        自动
+        静态分析-弹簧预载设置
+    """
     obj = AutoCur()
-    obj.sim_spring_preload()
+    obj.sim_spring_preload(**params_replace)
     obj.post_spring_preload()
-    obj.ask_record_static()
+    obj.record_static(record_state)
 
 
+# auto_brake(1, {'sim_type':'normal'})
+# auto_static_only(1, sim_type='normal')
+# auto_spring_preload(1, sim_type='normal')
 
-# auto_brake()
-# auto_static_only()
-auto_spring_preload()
+import sys
+calc_type = sys.argv[1].strip().lower()
+params = sys.argv[2].strip().lower()
+
+if calc_type == 'auto_brake':
+    auto_brake(1, {'sim_type':params})
+
+if calc_type == 'auto_static_only':
+    auto_static_only(1, sim_type=params)
+
+if calc_type == 'auto_spring_preload':
+    auto_spring_preload(1, sim_type=params)

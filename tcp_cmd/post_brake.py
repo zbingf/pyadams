@@ -8,7 +8,7 @@ from pprint import pprint, pformat
 # import os
 
 # 自建库
-from pyadams.datacal import plot
+import plot
 
 # POST_BRAKE_STR = {
 #     'x_dis': '制动距离',
@@ -112,28 +112,25 @@ def post_brake_sub_result_fig(sub_result, data_key):
     return fig_paths[0]
     
 
-
-
-# 制动后处理
-# results[int(velocity)] = {
-#     "params": data,      # 对应参数
-#     "dend": dend_n,       # 紧急制动, 结束位置的数据
-#     "result": result_n,   # 紧急制动, 开始制动之后的数据
-#     "result_total": result_total_n, # 紧急制动, 完整数据 dict_keys(['x_dis', 'y_dis', 'pitch', 'velocity', 'x_acc'])
-#     "dend_t": dend_t,     # 目标加速度制动, 结束位置的数据
-#     "result_t": result_t, # 目标加速度制动, 开始制动之后的数据
-#     "result_total_t": result_total_t, # 目标加速度制动, 完整数据
-#     "brake_t": brake_t,  # 目标加速度制动
-#     "g_t": data['target_g'], # 目标加速度
-#     "samplerate": samplerate, # 采样Hz
-#     }
-
-# 输出, 用于word替换
-# [old_figs, new_figs], [old_strs, new_strs]
-# 
 def post_brake(results):
-    # model_name = tcmdf.get_current_model()
-    
+    # 制动后处理
+    # results[int(velocity)] = {
+    #     "params": data,      # 对应参数
+    #     "dend": dend_n,       # 紧急制动, 结束位置的数据
+    #     "result": result_n,   # 紧急制动, 开始制动之后的数据
+    #     "result_total": result_total_n, # 紧急制动, 完整数据 dict_keys(['x_dis', 'y_dis', 'pitch', 'velocity', 'x_acc'])
+    #     "dend_t": dend_t,     # 目标加速度制动, 结束位置的数据
+    #     "result_t": result_t, # 目标加速度制动, 开始制动之后的数据
+    #     "result_total_t": result_total_t, # 目标加速度制动, 完整数据
+    #     "brake_t": brake_t,  # 目标加速度制动
+    #     "g_t": data['target_g'], # 目标加速度
+    #     "samplerate": samplerate, # 采样Hz
+    #     }
+
+    # 输出, 用于word替换
+    # [old_figs, new_figs], [old_strs, new_strs]
+    # 
+
     fig_dict, str_dict = {}, {}
 
     for velocity in results:
@@ -176,7 +173,7 @@ def post_brake(results):
 
 
 def test_cur_brake():
-    from pyadams.file import office_docx
+    import office_docx
     WordEdit = office_docx.WordEdit
     
     # results = tcp_car.sim_cur_brake()

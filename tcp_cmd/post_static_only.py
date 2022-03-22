@@ -10,7 +10,7 @@ import time
 from pprint import pprint, pformat
 
 # 自建库
-import pyadams.tcp_cmd.tcp_car as tcp_car
+import tcp_car
 
 
 get_cur_time = lambda: time.strftime('%Y:%m:%d-%H:%M', time.localtime(time.time()))
@@ -138,9 +138,10 @@ POST_STATIC = {
 
 
 # word 文档输出
-# old_list = 
-# ['$模型名称$', '$整车质量$', '$整车质心$', '$整车绕质心转动惯量$', '$轴距$', '$轮距$', '$轴数$', '$轮胎垂向力$', '$轮胎中心坐标$']
 def post_static_only(result):
+    # old_list = 
+    # ['$模型名称$', '$整车质量$', '$整车质心$', '$整车绕质心转动惯量$', 
+    # '$轴距$', '$轮距$', '$轴数$', '$轮胎垂向力$', '$轮胎中心坐标$']
 
     old_list, new_list = [], []
     for key in POST_STATIC:
@@ -262,11 +263,7 @@ def csv_post_static_only_print(result):
 
 
 # ------------------------------------------------
-# ------------------------------------------------
 # --------------------TEST------------------------
-# ------------------------------------------------
-# ------------------------------------------------
-
 
 def test_cur_static_only_word():
     from pyadams.file import office_docx

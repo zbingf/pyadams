@@ -8,11 +8,13 @@ import os
 import copy
 import re
 from pprint import pprint
+import time
 
 # 自建库
-from pyadams.call import tcplink
-cmds_run = tcplink.cmds_run # 直接运行,未处理的多个命令行
-cmd_send = tcplink.cmd_send
+# from pyadams.call import tcplink
+import tcp_link
+cmd_send = tcp_link.cmds_run # 直接运行,未处理的多个命令行
+query_send = tcp_link.cmd_send
 
 
 # ------------------------------------------------
@@ -21,9 +23,10 @@ cmd_send = tcplink.cmd_send
 # ------------------------------------------------
 # ------------------------------------------------
 
-# CMD命令替换
 def _cmd_replace(cmd_str, **param_dict):
-
+    """
+        CMD命令替换
+    """
     for key in param_dict:
         key1 = '#' + key + '#'
         cmd_str = cmd_str.replace(key1, param_dict[key])
@@ -31,8 +34,10 @@ def _cmd_replace(cmd_str, **param_dict):
     return cmd_str
 
 
-# 字典数据转换, 字典不允许有list
 def _dict_data_change(data):
+    """
+        字典数据转换, 字典不允许有list
+    """
     data = copy.deepcopy(data)
     for key in data:
         if isinstance(data[key], bool): # 优先先判断
@@ -48,7 +53,7 @@ def _dict_data_change(data):
 
 def _query_send(cmd):
 
-    return cmd_send(cmd, type_in='query').decode()
+    return query_send(cmd, type_in='query').decode()
 
 
 def _str2list(str1):
@@ -83,11 +88,10 @@ acar toolkit database add &
  database_path="#cdb_path#"
 """
 
-
-# 添加数据库
 def set_add_cdb(cdb_name, cdb_path):
+    """ 添加数据库 """
     new_cmd = _cmd_replace(CMD_ADD_CDB, cdb_name=cdb_name, cdb_path=cdb_path)
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
     return None
 
 
@@ -97,28 +101,28 @@ acar toolkit database default writable &
  database_name="#cdb_name#"
 """
 
-
-# 设置默认数据库
 def set_default_cdb(cdb_name):
+    """ 设置默认数据库 """
     new_cmd = _cmd_replace(CMD_DEFAULT_CDB, cdb_name=cdb_name)
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
     return None
 
 
 # # 打开asy总装配
 # def set_open_asy(asy_path):
 #     new_cmd = _cmd_replace(, asy_path=asy_path)
-#     cmds_run(new_cmd)
+#     cmd_send(new_cmd)
 #     return None
 
 
 CMD_CLOSE_ASY = """
 acar files assembly close assembly_name=#asy_name#
 """
-# 关闭asy总装配
+
 def set_close_asy(asy_name):
+    """ 关闭asy总装配 """
     new_cmd = _cmd_replace(CMD_CLOSE_ASY, asy_name=asy_name)
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
     return None
 
 
@@ -134,13 +138,11 @@ acar standard_interface spring &
  symmetric=#symmetric# 
 """
 
-# 解析spring命令,输出cmd
 def parse_spring(data):
-
+    """ 解析spring命令,输出cmd """
     return _cmd_replace(CMD_SPRING, **_dict_data_change(data))
 
 
-# 设置spring
 def set_spring(data):
     """
         设置ac_spring
@@ -157,7 +159,7 @@ def set_spring(data):
     """
     new_cmd = parse_spring(data)
     # new_cmd = _cmd_replace(CMD_SPRING, **_dict_data_change(data))
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
 
     return None
 
@@ -174,14 +176,12 @@ acar standard_interface bumpstop &
  symmetric=#symmetric# 
 """
 
-
-# 设置bumpstop
 def set_bumpstop(data):
     """
         设置ac_bumpstop
     """
     new_cmd = _cmd_replace(CMD_BUMPSTOP, **_dict_data_change(data))
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
 
     return None
 
@@ -197,9 +197,6 @@ acar standard_interface damper &
  symmetric=#symmetric# 
 """
 
-
-# 设置damper
-
 def set_damper(data):
     """
         设置ac_damper
@@ -213,10 +210,9 @@ def set_damper(data):
             }
     """
     new_cmd = _cmd_replace(CMD_DAMPER, **_dict_data_change(data))
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
 
     return None
-
 
 
 
@@ -226,9 +222,10 @@ def set_damper(data):
 # ------------------------------------------------
 # ------------------------------------------------
 
-
-# 数据是否存在
 def _query_db_exist(obj_name):
+    """
+        数据是否存在
+    """
     str1 = _query_send(f'db_exists("{obj_name}")')
     if int(str1):
         return True
@@ -237,78 +234,82 @@ def _query_db_exist(obj_name):
 
 
 _TEMP_DB_CHILDREN = 'TEMP_DB_CHILDREN'
-# 指定类型检索子项
+
 def _query_db_children(name_model_cur, obj_type):
-
-    cmds_run(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=.{name_model_cur}')
-    cmds_run(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=(eval(db_children(.{name_model_cur}, "{obj_type}")))')
+    """
+        指定类型检索子项
+    """
+    cmd_send(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=.{name_model_cur}')
+    cmd_send(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=(eval(db_children(.{name_model_cur}, "{obj_type}")))')
     str1 = _query_send(f'.{name_model_cur}.{_TEMP_DB_CHILDREN}')
-    cmds_run(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    cmd_send(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
     if str1 == 'No data from View':
         return False
     else:
         return _str2list(str1)
 
 
-# 指定类型检索子项, 限制层数
 def _query_db_descendants(name_model_cur, obj_type, a=1, l=2):
-
-    cmds_run(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=.{name_model_cur}')
-    cmds_run(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=(eval(db_descendants(.{name_model_cur}, "{obj_type}", 1, 2)))')
+    """
+        指定类型检索子项, 限制层数
+    """
+    cmd_send(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=.{name_model_cur}')
+    cmd_send(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} object_value=(eval(db_descendants(.{name_model_cur}, "{obj_type}", 1, 2)))')
     str1 = _query_send(f'.{name_model_cur}.{_TEMP_DB_CHILDREN}')
-    cmds_run(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    cmd_send(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
     if str1 == 'No data from View':
         return False
     else:
         return _str2list(str1)
     
     
-# 指定类型检索子项, 并指定名称范围
-# _query_db_children_filter(model_name, "request", "*velocity*")
 def _query_db_children_filter(name_model_cur, obj_type, filter_str):
+    """
+        指定类型检索子项, 并指定名称范围
+        _query_db_children_filter(model_name, "request", "*velocity*")
+    """
 
-    cmds_run(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} \
+    cmd_send(f'Variable create variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} \
              object_value=.{name_model_cur}')
-    cmds_run(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} \
+    cmd_send(f'Variable modify variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN} \
              object_value=(eval(db_filter_name(db_children(.{name_model_cur}, "{obj_type}"), "{filter_str}")))')
            
     str1 = _query_send(f'.{name_model_cur}.{_TEMP_DB_CHILDREN}')
-    cmds_run(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
+    cmd_send(f'Variable delete variable_name=.{name_model_cur}.{_TEMP_DB_CHILDREN}')
     if str1 == 'No data from View':
         return False
     else:
         return _str2list(str1)
 
 
-# 获取当前界面的模型
-def get_current_model():
+def get_variable(var_name):
+    """ varibale 数据获取"""
+    return _query_send(var_name)
 
+
+def get_current_model():
+    """获取当前界面的模型"""
     return _query_send('.gui.main.front.contents')[1:]
 
 
-# 获取当前cdb数据库
 def get_current_cdb():
-
+    """ 获取当前cdb数据库 """
     return _query_send('eval(cdb_get_write_default())')
 
 
-# 获取当前运行路径
 def get_cwd():
-
+    """ 获取当前运行路径 """
     return _query_send('getcwd()')
 
 
-
 @_query_str2list
-# 获取当前打开的模型
 def get_current_asys():
     """获取当前打开的模型"""
     return _query_send('.acar.dboxes.dbox_fil_ass_clo.o_assembly_name.CHOICES')
 
 
-# model质量获取
 def get_model_mass(name_model_cur):
-
+    """ model质量获取 """
     str1 = _query_send(f'ac_info_mass(.{name_model_cur})')
     if str1 != "No data from View":
         return float(str1)
@@ -319,8 +320,8 @@ def get_model_mass(name_model_cur):
 _parent_name = lambda name_full: '.'.join(name_full.split('.')[:-1])
 
 
-# 获取sub的次特征
 def get_sub_minors(model_name):
+    """ 获取sub的次特征 """
     # str1 = _query_send(f'DB_FILTER_NAME(db_children(.{model_name}, "variable"), "minor_role")')
     str1 = _query_send(f'DB_FILTER_NAME(db_descendants(.{model_name}, "variable", 1, 2), "minor_role")')
     sub2minor = {}
@@ -336,8 +337,9 @@ def get_sub_minors(model_name):
     return sub2minor
 
 
-# 根据子系统单元找子系统的minor
 def get_sub_elem_minor(element_name):
+    """ 根据子系统单元找子系统的minor """
+
     name = _parent_name(element_name)
 
     str1 = _query_send(f'DB_FILTER_NAME(db_descendants({name}, "variable", 1, 1), "minor_role")')
@@ -345,8 +347,9 @@ def get_sub_elem_minor(element_name):
     # print('--------', minor)
     return minor
 
-# 获取路面z坐标(只用于仿真后)
+
 def get_testrig_road_marker_z(model_name):
+    """ 获取路面z坐标(只用于仿真后) """
 
     testrig_name_full = '.' + model_name + '.testrig.ground.std_tire_ref'
     # str1 = _query_send(f'{testrig_name_full}.loc')
@@ -354,7 +357,7 @@ def get_testrig_road_marker_z(model_name):
     #
     return get_marker_loc_global(testrig_name_full)[-1]
 
-# print(get_testrig_road_marker_z(get_current_model()))
+    # print(get_testrig_road_marker_z(get_current_model()))
 
 
 # ! ---------------
@@ -366,16 +369,24 @@ list_info aggregate_mass &
  file_name="#path#"
 """
 
-# 获取模型质量数据
-# model_name = get_current_model()
-# get_aggregate_mass(model_name)
 def get_aggregate_mass(model_name):
+    """
+        获取模型质量数据
+        model_name = get_current_model()
+        get_aggregate_mass(model_name)
 
+    """
     cur_dir = get_cwd()
     temp_path = os.path.join(cur_dir, 'temp_mass_info.txt')
     if os.path.exists(temp_path): os.remove(temp_path)
     new_cmd = _cmd_replace(CMD_MASS_INFO, model_name=model_name, path=temp_path)
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
+
+    for n in range(50):
+        if not os.path.exists(temp_path):
+            time.sleep(0.2)
+        else:
+            break
 
     with open(temp_path, 'r') as f:
         lines = f.read().lower().split('\n')
@@ -401,32 +412,39 @@ def get_aggregate_mass(model_name):
             mass_data[key] = [float(v) for v in mass_data[key]]
     # print(mass_data)
     mass_data['model_name'] = model_name
+
     return mass_data
 
 
-# 获取marker的全局坐标LOC
 def get_marker_loc_global(marker):
-
+    """
+        获取marker的全局坐标LOC
+    """
     return _str2list(_query_send(f'loc_global({{0,0,0}}, {marker})'))
 
 
-# 获取marker在全局方向ORI
 def get_marker_ori_global(marker):
-    
+    """
+        获取marker在全局方向ORI
+    """
     return _str2list(_query_send(f'ori_global({{0,0,0}}, {marker})'))    
 
 
-# 通过filter获取指定request
 def get_request_by_filter(model_name, filter_str):
-    
+    """
+        通过filter获取指定request
+    """
     return _query_db_children_filter(model_name, "request", filter_str)
 
 
-# request 数据获取
-# REQUEST_TYPE 
-#     0: 'expr',
-#     4: 'force',
 def get_request_data_one(req):
+    """
+        request 数据获取
+        REQUEST_TYPE 
+            0: 'expr',
+            4: 'force',
+    """
+
     result = {}
     comp_names = _query_send(f'{req}.cnames')
     result_name = _query_send(f'{req}.results_name')
@@ -638,9 +656,8 @@ def get_model_tire_names(model_name):
     return _query_db_children(model_name, "ac_tire")
 
 
-# 根据ac_tire类型name(全称),获取tire数据
 def get_tire_data(name_full):
-
+    """ 根据ac_tire类型name(全称),获取tire数据 """
     minor = get_sub_elem_minor(name_full)
     path = _query_send(f'{name_full}.property_file')
 
@@ -655,12 +672,26 @@ def get_tire_data(name_full):
         'req_name':req_name, 'minor':minor}
 
         
-# 获取model_name(开头无'.')里所有的tire数据
 def get_model_tire_data(model_name):
-
+    """ 获取model_name(开头无'.')里所有的tire数据 """
     return _get_model_obj_data(model_name, get_model_tire_names, get_tire_data)
 
 # print(get_model_tire_data(get_current_model()))
+
+
+# -------------------------------------------
+# ---ac_susp_tire---
+# 与tire一致
+
+def get_model_sus_tire_names(model_name):
+
+    return _query_db_children(model_name, "ac_susp_tire")
+
+def get_model_sus_tire_data(model_name):
+    """ 获取model_name(开头无'.')里所有的tire数据 """
+    return _get_model_obj_data(model_name, get_model_sus_tire_names, get_tire_data)
+
+
 
 
 # ------------------------------------------------
@@ -669,18 +700,25 @@ def get_model_tire_data(model_name):
 # ------------------------------------------------
 # ------------------------------------------------
 
-# 删除仿真
+
 def set_analysis_del(sim_name):
-    cmds_run(f"analysis delete analysis_name={sim_name}")
+    """
+        删除仿真
+    """
+    cmd_send(f"analysis delete analysis_name={sim_name}")
     return None
 
 
 SIM_DIR_PREFIX = 'tcp_sim' # 仿真文件夹名称前缀
 
-# 仿真计算-前置
-# 创建仿真子文件夹
-# 调整工作路径到子文件夹
+
 def sim_pre_calc():
+    """
+        仿真计算-前置
+        创建仿真子文件夹
+        调整工作路径到子文件夹
+    """
+
     cur_dir = get_cwd()
     n = 0
     while True:
@@ -699,21 +737,25 @@ def sim_pre_calc():
         return cur_dir, False
 
 
-# 仿真计算-后置
-# 调整工作路径回原路径
-def sim_post_calc(cur_dir):
 
+def sim_post_calc(cur_dir):
+    """
+        仿真计算-后置
+        调整工作路径回原路径
+    """
     cur_dir = cur_dir.replace('\\','/')
     _query_send(f'chdir("{cur_dir}")')
 
 
-# car集成, 仿真
-# data dict, 包含仿真工况(不能有list)
-# sim_name_func 函数, 获取仿真名称 sim_name_func(sim_name)
-# set_sim_func 函数, 运行指定仿真  set_sim_func(data)
-# res_name_func 函数, 输出指定后处理路径 res_name_func(sim_dir, sim_name)
-def sim_car(data, sim_name_func, set_sim_func, res_name_func):
 
+def sim_car(data, sim_name_func, set_sim_func, res_name_func):
+    """
+       car集成, 仿真
+        data dict, 包含仿真工况(不能有list)
+        sim_name_func 函数, 获取仿真名称 sim_name_func(sim_name)
+        set_sim_func 函数, 运行指定仿真  set_sim_func(data)
+        res_name_func 函数, 输出指定后处理路径 res_name_func(sim_dir, sim_name)
+    """
     # sim_name = 'TEST1'
     sim_name = data['sim_name']
     
@@ -796,7 +838,7 @@ def set_sim_car_full_brake(data):
 
     new_cmd = _cmd_replace(CMD_SIM_CAR_BRAKE, **_dict_data_change(data))
     # print(new_cmd)
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
     return None
 
 
@@ -826,9 +868,9 @@ acar analysis full_vehicle static submit &
  log_file=yes
 """
 
-# 运行仿真
 def set_sim_car_full_static(data):
     """
+    运行仿真
     仅运行静平衡仿真 full_vehicle static
     data = {
         "model_name":
@@ -846,14 +888,121 @@ def set_sim_car_full_static(data):
 
     new_cmd = _cmd_replace(CMD_SIM_CAR_STATIC_FULL, **_dict_data_change(data))
     # print(new_cmd)
-    cmds_run(new_cmd)
+    cmd_send(new_cmd)
+    return None
+
+def sim_car_full_static(data):
+    """ 完整car静平衡仿真 """
+    return sim_car(data, _sim_name_full_static, set_sim_car_full_static, _sim_res_full_static)
+
+
+# -------------------------------------------
+# ---悬架-平行轮跳仿真---
+
+_sim_name_sus_parallel = lambda sim_name: sim_name + '_parallel_travel'
+_sim_res_sus_parallel = lambda sim_dir, sim_name: os.path.join(sim_dir, sim_name+'_parallel_travel.res')
+
+CMD_SIM_CAR_PARALLEL_SUS = """
+acar analysis suspension parallel_travel submit &
+ assembly=.#model_name# &
+ variant=default &
+ output_prefix="#sim_name#" &
+ nsteps=#step# &
+ bump_disp=#bump# &
+ rebound_disp=#rebound# &
+ stat_steer_pos=#steer# &
+ steering_input=angle &
+ vertical_setup=wheel_center_height &
+ vertical_input=wheel_center_height &
+ vertical_type=absolute &
+ comment="" &
+ analysis_mode=#mode# &
+ log_file=yes
+"""
+
+def set_sim_car_sus_parallel(data):
+    """
+    运行仿真
+    data = {
+        "model_name":
+        "sim_name"  : 
+        "step"      :
+        "bump"      :
+        "rebound"   :
+        "steer"     :
+        "mode"  :
+        }
+    """
+    # model_name
+    # sim_name
+
+    if "mode" not in data: data["mode"] = 'interactive'
+    if "steer" not in data: data["steer"] = 0
+
+    new_cmd = _cmd_replace(CMD_SIM_CAR_PARALLEL_SUS, **_dict_data_change(data))
+    # print(new_cmd)
+    cmd_send(new_cmd)
     return None
 
 
-# 完整car静平衡仿真
-def sim_car_full_static(data):
+def sim_car_sus_parallel(data):
+    """ 完整car静平衡仿真 """
+    return sim_car(data, _sim_name_sus_parallel, set_sim_car_sus_parallel, _sim_res_sus_parallel)
 
-    return sim_car(data, _sim_name_full_static, set_sim_car_full_static, _sim_res_full_static)
+
+# -------------------------------------------
+# ---悬架-反向轮跳仿真---
+
+_sim_name_sus_opposite = lambda sim_name: sim_name + '_opposite_travel'
+_sim_res_sus_opposite = lambda sim_dir, sim_name: os.path.join(sim_dir, sim_name+'_opposite_travel.res')
+
+CMD_SIM_CAR_OPPOSITE_SUS = """
+acar analysis suspension opposite_travel submit &
+ assembly=.#model_name# &
+ variant=default &
+ output_prefix="#sim_name#" &
+ nsteps=#step# &
+ bump_disp=#bump# &
+ rebound_disp=#rebound# &
+ stat_steer_pos=#steer# &
+ steering_input=angle &
+ vertical_setup=wheel_center_height &
+ vertical_input=wheel_center_height &
+ vertical_type=absolute &
+ comment="" &
+ analysis_mode=#mode# &
+ log_file=yes
+"""
+
+def set_sim_car_sus_opposite(data):
+    """
+    运行仿真
+    data = {
+        "model_name":
+        "sim_name"  : 
+        "step"      :
+        "bump"      :
+        "rebound"   :
+        "steer"     :
+        "mode"  :
+        }
+    """
+    # model_name
+    # sim_name
+
+    if "mode" not in data: data["mode"] = 'interactive'
+    if "steer" not in data: data["steer"] = 0
+
+    new_cmd = _cmd_replace(CMD_SIM_CAR_OPPOSITE_SUS, **_dict_data_change(data))
+    # print(new_cmd)
+    cmd_send(new_cmd)
+    return None
+
+
+def sim_car_sus_opposite(data):
+    """ 完整car静平衡仿真 """
+    return sim_car(data, _sim_name_sus_opposite, set_sim_car_sus_opposite, _sim_res_sus_opposite)
+
 
 
 # ------------------------------------------------
@@ -938,23 +1087,53 @@ def test_sim_full_static():
     pprint(result)
 
 
+def test_sim_car_sus_parallel():
+    pass
+    model_name = get_current_model()
+    data = {
+        "model_name": model_name,
+        "sim_name" : "auto_sim",
+        "step" : 100,
+        "bump" : 50,
+        "rebound" : -50,
+    }
+    result = sim_car_sus_parallel(data)
+    pprint(result)
+    # test_sim_car_sus_parallel()
+
+
+def test_set_sim_car_sus_opposite():
+    pass
+    model_name = get_current_model()
+    data = {
+        "model_name": model_name,
+        "sim_name" : "auto_sim",
+        "step" : 100,
+        "bump" : 50,
+        "rebound" : -50,
+    }
+    result = sim_car_sus_opposite(data)
+    pprint(result)
+    # test_set_sim_car_sus_opposite()
+
+
 # test_sim_brake()
 # test_query_element_model()
-
-
-
-
 
 
 def test():
     model_name = get_current_model()
         
     reqs = get_request_by_filter(model_name, '*frame_force*')
-    for req in reqs:
-        result = get_request_data_one(req)
-
-
+    print(reqs)
+    if reqs:
+        for req in reqs:
+            result = get_request_data_one(req)
         # print(req, req_type, comp_names, attr)
+    
+        print(result)
+
+    print(get_aggregate_mass(model_name))
     
     # print(req, req_type)
     # f_req = reqs[-1]
@@ -965,12 +1144,22 @@ def test():
 
 
 
+def adams_python_run(line):
+    """
+        运行 adams的python
+        line: 单行命令
+    """
+    return _query_send(f"eval(run_python_code('{line}'))")
+
+
+
 if __name__=='__main__':
 
     pass
-    test()
-    
-    model_name = get_current_model()
+    # test()
+    print(adams_python_run('import os'))
+    print(adams_python_run('os.getcwd()'))
+    # model_name = get_current_model()
     # set_default_cdb('T75E01')
     # set_close_asy(model_name)
     

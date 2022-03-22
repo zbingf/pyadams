@@ -9,11 +9,17 @@ import math
 # from pprint import pprint, pformat
 
 # 自建库
-from pyadams.tcp_cmd.tcp_car import *
-import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
+from tcp_car import *
+import tcp_cmd_fun as tcmdf
+# from pyadams.tcp_cmd.tcp_car import *
+# import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
+
 
 
 req_filter = json_read(ACAR_REQUEST_PATH)
+
+round_list = lambda list1, n: [round(v, n) for v in list1]
+
 
 
 # req-车架受力
@@ -82,7 +88,19 @@ def tk_select_cur_res_frame_force():
 
 def test_req_select():
     reqs = tk_req_select(get_cur_request_frame_force())
-    print(reqs)
+    if not reqs: return 
+    
+    for req in reqs:
+        result = tcmdf.get_request_data_one(req)
+        print(result)
+        if result['type'] == 'force':
+            
+            print('{},{},{},{},'.format(
+                result['result_name'], 
+                *round_list(result['i_loc'], 2)
+                )
+            )
+    # print(reqs)
 
 
 

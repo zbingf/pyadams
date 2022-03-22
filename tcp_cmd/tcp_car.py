@@ -1,4 +1,5 @@
 # 标准库
+import os
 import json
 import re
 import math
@@ -6,13 +7,20 @@ import copy
 from pprint import pprint, pformat
 
 # 自建库
-from pyadams.file import result
+import result
 DataModel = result.DataModel
 
+FILEDIR = os.path.dirname(os.path.abspath(__file__))
+set_abs_path = lambda str1: os.path.abspath(os.path.join(FILEDIR, str1))
 
-ACAR_FULL_BRAKE_PATH = "acar_full_brake_set.json"
-ACAR_FULL_STATIC_PATH = "acar_full_static_set.json"
-ACAR_REQUEST_PATH = "acar_request_set.json"
+# ACAR_FULL_BRAKE_PATH = "./00_set/acar_full_brake_set.json"
+# ACAR_FULL_STATIC_PATH = "./00_set/acar_full_static_set.json"
+# ACAR_REQUEST_PATH = "./00_set/acar_request_set.json"
+ACAR_FULL_BRAKE_PATH = set_abs_path("00_set/acar_full_brake_set.json")
+ACAR_FULL_STATIC_PATH = set_abs_path("00_set/acar_full_static_set.json")
+ACAR_REQUEST_PATH = set_abs_path("00_set/acar_request_set.json")
+
+
 
 
 # 字符串','分割, list非空字符
@@ -34,13 +42,41 @@ def json_read(json_path):
             if line.strip().startswith('//'):
                 continue
             lines.append(line)
-
-    return json.loads('\n'.join(lines))
+    data = json.loads('\n'.join(lines))
+    return set_file_abs_path(data)
     
+
+def set_file_abs_path(data, new_data=None):
+    """
+        json set 数据路径转为绝地路径
+        
+        相对路径必须为 ./ 开头
+    """
+
+    if new_data==None: new_data = {}
+    for key in data:
+        line = data[key]
+        if isinstance(line, dict):
+            new_data[key] = set_file_abs_path(data[key])
+            # print(new_data[key])
+            continue
+
+        if '_path' in key[-5:]:
+            
+            if isinstance(line, str):
+                if '.' == line[0]:
+                    new_data[key] = os.path.abspath(os.path.join(FILEDIR, line[2:]))
+                    continue
+
+        new_data[key] = line
+
+    return new_data
 
 
 # res后处理文件快速读取
-def res_read(name, name_res, res_path, reqs, comps, line_range=[4,None], isSamplerate=False):
+def res_read(name, name_res, res_path, reqs, comps, line_range=None, isSamplerate=False):
+    # if line_range==None: line_range = [4,None]
+        
     dataobj = DataModel(name)
     dataobj.new_file(res_path, name_res)
     dataobj[name_res].set_reqs_comps(reqs, comps)
@@ -58,7 +94,9 @@ def res_read(name, name_res, res_path, reqs, comps, line_range=[4,None], isSampl
 
 
 # res后处理文件数据再次获取, 不重复读取
-def res_read_again(name, name_res, reqs, comps, line_range=[4,None]):
+def res_read_again(name, name_res, reqs, comps, line_range=None):
+    # if line_range==None: line_range = [4,None]
+    
     dataobj = DataModel(name)
     dataobj[name_res].set_reqs_comps(reqs, comps)
     dataobj[name_res].set_line_ranges(line_range)

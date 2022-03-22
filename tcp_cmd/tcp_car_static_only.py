@@ -7,38 +7,42 @@
 from pprint import pprint, pformat
 
 # 自建库
-from pyadams.tcp_cmd.tcp_car import *
-import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
+from tcp_car import *
+import tcp_cmd_fun as tcmdf
+# from pyadams.tcp_cmd.tcp_car import *
+# import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
 
 
 
-# 解析轮胎中心坐标数据
-# 
-# 输入:tire_locs 轮心坐标
-# {
-# 'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
-#  'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
-#  'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
-#  'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]
-# }
-# 
-# 输出
-# {
-# 'Axles': {'TR_Front_Tires.til_wheel': 1,         轮胎所属轴
-#            'TR_Front_Tires.tir_wheel': 1,
-#            'TR_Rear_Tires.til_wheel': 2,
-#            'TR_Rear_Tires.tir_wheel': 2},
-#  'Ls': {'L-1-2': 2560.0},                         轴距
-#  'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,   轮距
-#         'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
-#  'axle_num': 2,                                   车轴数
-#  'tire_names': ['TR_Front_Tires.til_wheel',       轮胎名称, 有序
-#                 'TR_Front_Tires.tir_wheel',
-#                 'TR_Rear_Tires.til_wheel',
-#                 'TR_Rear_Tires.tir_wheel'],
-#  'x_start': 267.0                                 第一轴 X 坐标                          
-# }
+
 def parse_tire_locs(tire_locs):
+    # 解析轮胎中心坐标数据
+    # 
+    # 输入:tire_locs 轮心坐标
+    # {
+    # 'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
+    #  'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
+    #  'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
+    #  'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]
+    # }
+    # 
+    # 输出
+    # {
+    # 'Axles': {'TR_Front_Tires.til_wheel': 1,         轮胎所属轴
+    #            'TR_Front_Tires.tir_wheel': 1,
+    #            'TR_Rear_Tires.til_wheel': 2,
+    #            'TR_Rear_Tires.tir_wheel': 2},
+    #  'Ls': {'L-1-2': 2560.0},                         轴距
+    #  'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,   轮距
+    #         'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
+    #  'axle_num': 2,                                   车轴数
+    #  'tire_names': ['TR_Front_Tires.til_wheel',       轮胎名称, 有序
+    #                 'TR_Front_Tires.tir_wheel',
+    #                 'TR_Rear_Tires.til_wheel',
+    #                 'TR_Rear_Tires.tir_wheel'],
+    #  'x_start': 267.0                                 第一轴 X 坐标                          
+    # }
+
 
     # 右侧数据, 排序
     right_tire_locs = {key:tire_locs[key] for key in tire_locs if tire_locs[key][1]>0}
@@ -87,49 +91,50 @@ def parse_tire_locs(tire_locs):
     return output
     
 
-# 计算-静平衡计算
-# 
-# 输入
-# {'gear': 0,
-#  'mode': 'interactive',
-#  'model_name': 'MDI_Demo_Vehicle',
-#  'preload_path': 'acar_full_static_preload_01.spr',
-#  'sim_name': 'auto_sim',
-#  'sim_type': 'settle'}
-# res_path 后处理有输入则不再进行静态计算
-# 
-# 输出
-# {'Axles': {'TR_Front_Tires.til_wheel': 1,
-#            'TR_Front_Tires.tir_wheel': 1,
-#            'TR_Rear_Tires.til_wheel': 2,
-#            'TR_Rear_Tires.tir_wheel': 2},
-#  'I_center': [298688841.89, 1162890925.9, 1341023809.23],
-#  'Ls': {'L-1-2': 2560.0},
-#  'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,
-#         'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
-#  'axle_num': 2,
-#  'm_center': [1482.05, -1.42, 415.45],
-#  'mass': 1527.68,
-#  'model_name': 'MDI_Demo_Vehicle',
-#  'tire_forces': {'TR_Front_Tires.til_wheel': 3159.3,
-#                  'TR_Front_Tires.tir_wheel': 3145.1,
-#                  'TR_Rear_Tires.til_wheel': 4345.73,
-#                  'TR_Rear_Tires.tir_wheel': 4331.3},
-#  'tire_locs': {'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
-#                'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
-#                'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
-#                'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]},
-#  'tire_names': ['TR_Front_Tires.til_wheel',
-#                 'TR_Front_Tires.tir_wheel',
-#                 'TR_Rear_Tires.til_wheel',
-#                 'TR_Rear_Tires.tir_wheel']}
-def sim_static_only(data, res_path=None):
 
-    model_name = data['model_name']
+def sim_static_only(params, res_path=None):
+    # 计算-静平衡计算
+    # 
+    # 输入
+    # {'gear': 0,
+    #  'mode': 'interactive',
+    #  'model_name': 'MDI_Demo_Vehicle',
+    #  'preload_path': 'acar_full_static_preload_01.spr',
+    #  'sim_name': 'auto_sim',
+    #  'sim_type': 'settle'}
+    # res_path 后处理有输入则不再进行静态计算
+    # 
+    # 输出
+    # {'Axles': {'TR_Front_Tires.til_wheel': 1,
+    #            'TR_Front_Tires.tir_wheel': 1,
+    #            'TR_Rear_Tires.til_wheel': 2,
+    #            'TR_Rear_Tires.tir_wheel': 2},
+    #  'I_center': [298688841.89, 1162890925.9, 1341023809.23],
+    #  'Ls': {'L-1-2': 2560.0},
+    #  'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,
+    #         'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
+    #  'axle_num': 2,
+    #  'm_center': [1482.05, -1.42, 415.45],
+    #  'mass': 1527.68,
+    #  'model_name': 'MDI_Demo_Vehicle',
+    #  'tire_forces': {'TR_Front_Tires.til_wheel': 3159.3,
+    #                  'TR_Front_Tires.tir_wheel': 3145.1,
+    #                  'TR_Rear_Tires.til_wheel': 4345.73,
+    #                  'TR_Rear_Tires.tir_wheel': 4331.3},
+    #  'tire_locs': {'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
+    #                'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
+    #                'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
+    #                'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]},
+    #  'tire_names': ['TR_Front_Tires.til_wheel',
+    #                 'TR_Front_Tires.tir_wheel',
+    #                 'TR_Rear_Tires.til_wheel',
+    #                 'TR_Rear_Tires.tir_wheel']}
+
+    model_name = params['model_name']
     
     # -------------------    
     if res_path==None:
-        result_static = tcmdf.sim_car_full_static(data) # 静态计算
+        result_static = tcmdf.sim_car_full_static(params) # 静态计算
         res_path = result_static['res_path']
     
     mass_data = tcmdf.get_aggregate_mass(model_name)
@@ -177,15 +182,19 @@ def sim_static_only(data, res_path=None):
     return vehicle_data
     
 
-# 仅静态计算
-def main_cur_static_only(res_path=None):
-
-    data = json_read(ACAR_FULL_STATIC_PATH)
-    data['model_name'] = tcmdf.get_current_model()
-    # pprint(data)
-    vehicle_data = round_data_dict(sim_static_only(data, res_path), {}, 2) # 保留2位数据
-    # pprint(round_data_dict({"a":vehicle_data, "b":{"b1":vehicle_data, 'b2':vehicle_data}}, {}, 1))
+def main_cur_static_only(res_path=None, **params_replace):
+    """
+        仅静态计算
+        res_path 若为None, 则进行仿真计算; 否则直接调用res_path数据计算
+        params_replace 用于对json设置数据的 增改
+    """
+    params = json_read(ACAR_FULL_STATIC_PATH) # 静态数据存放读取
+    params['model_name'] = tcmdf.get_current_model()
+    for key in params_replace: params[key] = params_replace[key]
     
+    vehicle_data = round_data_dict(sim_static_only(params, res_path), {}, 2) # 保留2位数据
+    # pprint(params)
+    # 
     return vehicle_data
 
 
