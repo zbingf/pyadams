@@ -6,13 +6,18 @@
 # 标准库
 import math
 import copy
-# from pprint import pprint, pformat
+import logging
+from pprint import pprint, pformat
 
 # 自建库
 from tcp_car import *
 import tcp_cmd_fun as tcmdf
-# from pyadams.tcp_cmd.tcp_car import *
-# import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
+
+
+# ----------
+logger = logging.getLogger('tcp_car_brake')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 def sim_brake_single(params):
@@ -59,6 +64,7 @@ def sim_brake_single(params):
     # }
     # samplerate 采样频率
     # result_dic 格式与new_result_dic一致, 数据为未处理状态
+    if is_debug: logger.debug("call sim_brake_single")
 
 
     # 仿真调用
@@ -120,9 +126,9 @@ def sim_cur_brake():
     #     "g_t": data['target_g'],            # 目标加速度
     #     "samplerate": samplerate,           # 采样Hz
     #     }
+    if is_debug: logger.debug("Call sim_cur_brake")
 
-
-    abs_min_acc = lambda result: abs(min(result['x_acc']))
+    min_abs_acc = lambda result: abs(min(result['x_acc']))
 
     model_name = tcmdf.get_current_model()
 
@@ -139,14 +145,21 @@ def sim_cur_brake():
     gainit = data['gainit'] # 迭代增益 0.8
     
     def ite_run(data, last_acc, gain=gainit, n_ite=maxit):
+
+        if is_debug: logger.debug("Call sim_cur_brake-ite_run")
+
         # 迭代仿真
         cur_brake = 100 / last_acc * target_g
         d_brake = 100 / last_acc * gain
         last_brake = cur_brake
         for calc_n in range(n_ite):
+            if is_debug: logger.debug(f"ite_run cur_brake:{round(cur_brake,2)}")
             data['brake'] = cur_brake
             dend_dic, result, samplerate, result_total = sim_brake_single(data)
-            cur_acc = abs_min_acc(result)
+            cur_acc = min_abs_acc(result)
+
+            if is_debug: logger.debug(f"ite : {calc_n} cur_acc : {round(cur_acc,2)} g")
+            if is_debug: logger.debug(f"ite : {calc_n} d_brake : {round(d_brake,2)}")
 
             # print('d_acc: ')
             if abs(target_g - cur_acc) < target_tolerance_g:  
@@ -171,11 +184,14 @@ def sim_cur_brake():
         data['brake'] = brake_max   # 100
         data['sim_name'] = f'v{int(velocity)}'
         data['velocity'] = velocity
+
+        if is_debug: logger.debug(f"init brake velocity: {velocity} km/h")
+
         dend_n, result_n, samplerate, result_total_n = sim_brake_single(data)
 
         # 目标加速度, 迭代仿真
         data['sim_name'] = data['sim_name'] + '_limit'
-        last_acc = abs_min_acc(result_n)
+        last_acc = min_abs_acc(result_n)
         dend_t, result_t, brake_t, result_total_t = ite_run(data, last_acc)
         
         results[int(velocity)] = {
@@ -191,6 +207,7 @@ def sim_cur_brake():
             "samplerate": samplerate,           # 采样Hz
             }
 
+    if is_debug: logger.debug(f"End sim_cur_brake")
     # print(results)
     return results
 

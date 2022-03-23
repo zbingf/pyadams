@@ -6,14 +6,17 @@
 # 标准库
 import os
 from pprint import pprint, pformat
+import logging
 
 # 自建库
 from tcp_car import *
 import tcp_cmd_fun as tcmdf
-# from pyadams.tcp_cmd.tcp_car import *
-# import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
 
 
+# ----------
+logger = logging.getLogger('tcp_car_spring_preload')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 def sim_static_spring_preload(params):
@@ -44,6 +47,7 @@ def sim_static_spring_preload(params):
     #                    'TR_Rear_Suspension.nsl_ride_spring': 8017.92,
     #                    'TR_Rear_Suspension.nsr_ride_spring': 7993.69}
     # }
+    if is_debug: logger.debug("Call sim_static_spring_preload")
 
     model_name = params['model_name']
     preload_path = os.path.abspath(params['preload_path']) # 绝对路径
@@ -59,6 +63,7 @@ def sim_static_spring_preload(params):
     
     # -------------------
     # 弹簧预载初始化
+    if is_debug: logger.debug(f"spring_edit init")
     new_springs = edit_datads_by_key(springs, spring_names, 'type', ['preload']*n_spring)
     new_springs = edit_datads_by_key(new_springs, spring_names, 'value', [0]*n_spring)
     new_springs = edit_datads_by_key(new_springs, spring_names, 'symmetric', [False]*n_spring)
@@ -68,6 +73,7 @@ def sim_static_spring_preload(params):
     
     # -------------------    
     # 静态计算
+    if is_debug: logger.debug("first static sim")
     result_static = tcmdf.sim_car_full_static(params)
     res_path = result_static['res_path']
     
@@ -77,6 +83,7 @@ def sim_static_spring_preload(params):
     
     # -------------------
     # 弹簧校正
+    if is_debug: logger.debug(f"spring_edit")
     new_springs_02 = edit_datads_by_key(springs, spring_names, 'type', ['preload']*n_spring)
     new_springs_02 = edit_datads_by_key(new_springs_02, spring_names, 'value', spring_values)
     new_springs_02 = edit_datads_by_key(new_springs_02, spring_names, 'symmetric', [False]*n_spring)
@@ -85,13 +92,15 @@ def sim_static_spring_preload(params):
     for key in new_springs_02: 
         tcmdf.set_spring(new_springs_02[key])
         new_spring_edits.append(tcmdf.parse_spring(new_springs_02[key]))
-        
+    
+    if is_debug: logger.debug("second static sim")
     result_static = tcmdf.sim_car_full_static(params)
     res_path = result_static['res_path']
     result_data, _ = res_read('sim_full_static', 'static', res_path, reqs, comps_dis, line_range=None)
     spring_lengths = [line[-1] for line in result_data]
     # print(spring_length)
-    
+    if is_debug: logger.debug(f"spring_lengths {spring_lengths}")
+
     # print('\n'.join(new_spring_edits))
     
     output_data = {
@@ -102,6 +111,7 @@ def sim_static_spring_preload(params):
         'res_path' : res_path,
         }
     
+    if is_debug: logger.debug("End sim_static_spring_preload")
     return output_data
 
 

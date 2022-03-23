@@ -11,11 +11,9 @@ import math
 # 自建库
 from tcp_car import *
 import tcp_cmd_fun as tcmdf
-# from pyadams.tcp_cmd.tcp_car import *
-# import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
 
 
-
+# ----------
 req_filter = json_read(ACAR_REQUEST_PATH)
 
 round_list = lambda list1, n: [round(v, n) for v in list1]

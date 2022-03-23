@@ -10,17 +10,16 @@ from pprint import pprint, pformat
 import result
 DataModel = result.DataModel
 
+
+# ------------
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
 set_abs_path = lambda str1: os.path.abspath(os.path.join(FILEDIR, str1))
-
 # ACAR_FULL_BRAKE_PATH = "./00_set/acar_full_brake_set.json"
 # ACAR_FULL_STATIC_PATH = "./00_set/acar_full_static_set.json"
 # ACAR_REQUEST_PATH = "./00_set/acar_request_set.json"
 ACAR_FULL_BRAKE_PATH = set_abs_path("00_set/acar_full_brake_set.json")
 ACAR_FULL_STATIC_PATH = set_abs_path("00_set/acar_full_static_set.json")
 ACAR_REQUEST_PATH = set_abs_path("00_set/acar_request_set.json")
-
-
 
 
 # 字符串','分割, list非空字符

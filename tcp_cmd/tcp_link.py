@@ -25,7 +25,12 @@ PORT=5002
 LOCALHOST='127.0.0.1'
 MSGLEN = 65536
 
-isDebug = True
+
+# ----------
+logger = logging.getLogger('tcp_link')
+logger.setLevel(logging.DEBUG)
+is_debug = False
+
 
 class MySocket:
     """demonstration class only
@@ -50,7 +55,7 @@ class MySocket:
                 time.sleep(2)
                 #sys.exit(-1)
             else:
-                if isDebug: logging.debug("[*]Socket Connect Success")
+                if is_debug: logger.debug("[*]Socket Connect Success")
                 break
 
     def mysend(self, msg):
@@ -59,6 +64,7 @@ class MySocket:
         # for n in range(num):
         #     self._send(msg[n*MSGLEN : (n+1)*MSGLEN])
         self._send(msg)
+        if is_debug: logger.debug(f"send {msg}")
 
     def myreceive(self):
         chunks = []
@@ -66,7 +72,7 @@ class MySocket:
         chunk = self._receive(MSGLEN)
         chunks.append(chunk)
         while len(chunk) == MSGLEN:
-            if isDebug: logging.debug(f"recv len: {len(chunk)}")
+            if is_debug: logger.debug(f"recv len: {len(chunk)}")
             chunk = self._receive(MSGLEN)
             chunks.append(chunk)
             # time.sleep(0.03)

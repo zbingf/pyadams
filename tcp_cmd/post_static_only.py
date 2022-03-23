@@ -8,9 +8,15 @@ import os.path
 import getpass
 import time
 from pprint import pprint, pformat
+import logging
 
 # 自建库
 import tcp_car
+
+# ----------
+logger = logging.getLogger('post_static_only')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 get_cur_time = lambda: time.strftime('%Y:%m:%d-%H:%M', time.localtime(time.time()))
@@ -255,10 +261,12 @@ def csv_post_static_only_print(result):
 
     if os.path.exists(RECORD_PATH):
         csv_post_static_only_append(RECORD_PATH, result)
-        print('append')
+        if is_debug: logger.debug("append")
+        # print('append')
     else:
         csv_post_static_only_start(RECORD_PATH, result)
-        print('new write')
+        if is_debug: logger.debug("new write")
+        # print('new write')
 
 
 
@@ -266,7 +274,7 @@ def csv_post_static_only_print(result):
 # --------------------TEST------------------------
 
 def test_cur_static_only_word():
-    from pyadams.file import office_docx
+    import office_docx
     WordEdit = office_docx.WordEdit
 
     # word文档编辑 测试

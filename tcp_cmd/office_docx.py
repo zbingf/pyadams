@@ -24,7 +24,7 @@ def combind_words_win32(main_path, file_paths):
         调用 win32com 模块
     """
 
-    logger.info('combind_words_win32 win32com调用')
+    logging.info('combind_words_win32 win32com调用')
 
     main_path = os.path.abspath(main_path)
 
@@ -56,7 +56,7 @@ def doc2pdf(doc_path, pdf_path=None):
     """
         调用 win32com 模块
     """
-    logger.info('doc2pdf win32com调用')
+    logging.info('doc2pdf win32com调用')
 
     doc_path = os.path.abspath(doc_path)
 
@@ -90,7 +90,7 @@ class WordEdit:
     """
     def __init__(self,word_path):
         
-        logger.info('WordEdit win32com调用')
+        logging.info('WordEdit win32com调用')
 
         word_path = os.path.abspath(word_path)
 
@@ -128,12 +128,12 @@ class WordEdit:
         else:
             self.document.SaveAs2(self.file_path,12,False,"",True,"",False,False,False,False,False,15)
 
-        logger.info(f'保存word:{self.file_path}')
+        logging.info(f'保存word:{self.file_path}')
 
     def close(self):
         """ 关闭 word"""
         self.document.Close()
-        logger.info(f'关闭word:{self.file_path}')
+        logging.info(f'关闭word:{self.file_path}')
 
     def replace_str(self, oldStr, newStr):
         """
@@ -145,7 +145,7 @@ class WordEdit:
         selection.Find.Replacement.ClearFormatting()
         selection.Find.Execute(oldStr,False,False,False,False,False,True,1,True,newStr,2)
 
-        logger.info(f'文字替换:{oldStr} --> {newStr}')
+        logging.info(f'文字替换:{oldStr} --> {newStr}')
 
     def add_picture(self, oldStr, fig_path):
         """
@@ -164,6 +164,6 @@ class WordEdit:
             else:
                 break
 
-        logger.info(f'图片替换:{oldStr} --> {fig_path}')
+        logging.info(f'图片替换:{oldStr} --> {fig_path}')
 
 

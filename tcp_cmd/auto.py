@@ -5,7 +5,7 @@
 # 标准库
 import os
 import tkinter.messagebox
-
+import logging
 
 # 自建库
 import tcp_car
@@ -19,14 +19,22 @@ import office_docx
 WordEdit = office_docx.WordEdit
 
 
+# ----------
+logger = logging.getLogger('auto')
+logger.setLevel(logging.DEBUG)
+is_debug = True
+
+# ----------
 FILEDIR = os.path.dirname(os.path.abspath(__file__))
-
-# AUTO_SET_PATH = './00_set/auto_set.json'
 AUTO_SET_PATH = os.path.abspath(os.path.join(FILEDIR, '00_set/auto_set.json'))
-
 json_read = tcp_car.json_read
 AUTO_SET = json_read(AUTO_SET_PATH)
 
+# ----------
+log_format = '%(levelname)s : %(module)s : %(funcName)s : %(lineno)s : %(message)s'
+# logging.basicConfig(filename='mylog.log', level=logging.DEBUG, filemode='w', format=log_format)
+# logging.basicConfig(level=logging.DEBUG, format=log_format)
+logging.basicConfig(format=log_format)
 
 # 若文件存在则家后缀
 def set_new_path(path):
@@ -149,7 +157,7 @@ def auto_brake(record_state=1, params_static_replace=None):
     """
         制动稳定性分析
     """
-
+    if is_debug: logging.debug("Call auto_brake")
     word_path = AUTO_SET['auto_brake']['word_path']
     new_word_path = set_new_path(AUTO_SET['auto_brake']['new_word_path'])
 
@@ -161,9 +169,11 @@ def auto_brake(record_state=1, params_static_replace=None):
     obj.sim_brake()
     obj.post_static_list()
     obj.post_brake_list()
+    if is_debug: logging.debug("word_edit")
     obj.word_edit(word_path, new_word_path)
     obj.record_static(record_state)
     obj.remove_figs()
+    if is_debug: logging.debug("End auto_brake")
 
 
 def auto_static_only(record_state=1, **params_replace):
@@ -171,9 +181,11 @@ def auto_static_only(record_state=1, **params_replace):
         自动
         静态分析
     """
+    if is_debug: logging.debug("Call auto_static_only")
     obj = AutoCur()
     obj.sim_static(**params_replace)
     obj.record_static(record_state)
+    if is_debug: logging.debug("End auto_static_only")
 
 
 def auto_spring_preload(record_state=1, **params_replace):
@@ -181,25 +193,36 @@ def auto_spring_preload(record_state=1, **params_replace):
         自动
         静态分析-弹簧预载设置
     """
+    if is_debug: logging.debug("Call auto_spring_preload")
     obj = AutoCur()
     obj.sim_spring_preload(**params_replace)
     obj.post_spring_preload()
     obj.record_static(record_state)
+    if is_debug: logging.debug("End auto_spring_preload")
 
 
-# auto_brake(1, {'sim_type':'normal'})
-# auto_static_only(1, sim_type='normal')
-# auto_spring_preload(1, sim_type='normal')
+import coverage
+cov = coverage.coverage()
+cov.start()
 
-import sys
-calc_type = sys.argv[1].strip().lower()
-params = sys.argv[2].strip().lower()
+auto_brake(1, {'sim_type':'normal'})
+auto_static_only(1, sim_type='normal')
+auto_spring_preload(1, sim_type='normal')
 
-if calc_type == 'auto_brake':
-    auto_brake(1, {'sim_type':params})
+cov.stop()
+cov.save()
 
-if calc_type == 'auto_static_only':
-    auto_static_only(1, sim_type=params)
+# import sys
+# calc_type = sys.argv[1].strip().lower()
+# params = sys.argv[2].strip().lower()
 
-if calc_type == 'auto_spring_preload':
-    auto_spring_preload(1, sim_type=params)
+# if calc_type == 'auto_brake':
+#     auto_brake(1, {'sim_type':params})
+
+# if calc_type == 'auto_static_only':
+#     auto_static_only(1, sim_type=params)
+
+# if calc_type == 'auto_spring_preload':
+#     auto_spring_preload(1, sim_type=params)
+
+logging.shutdown()

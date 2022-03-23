@@ -8,7 +8,9 @@ import os.path
 
 # ==============================
 # logging日志配置
-logger = logging.getLogger('result:')
+logger = logging.getLogger('result')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 # ==============================
 
 
@@ -151,7 +153,7 @@ class ResFile(ReusltData):
 
         if not isReload:
             self._set_request_data()
-            logger.warning(f'ResFile: {self.name} do not reload!!!')
+            if is_debug: logger.warning(f'ResFile: {self.name} do not reload!!!')
             return None
 
         fileid = open(file_path,'r')
@@ -261,8 +263,8 @@ class ResFile(ReusltData):
             try:
                 dataId.append(requestId[keyName])
             except:
-                # logger.warning('reqs.comps error: {}\n'.format(keyName))
-                logger.error(f'{keyName} not in requestId')
+                # if is_debug: logger.warning('reqs.comps error: {}\n'.format(keyName))
+                if is_debug: logger.error(f'{keyName} not in requestId')
                 isAllRead = False
 
         assert isAllRead , 'ResFile读取失败,未完全完成读取,终止'
@@ -309,7 +311,7 @@ class ResFile(ReusltData):
         for req, comp in zip(self.reqs, self.comps):
             key_name = str_lower_strip(req)+'.'+str_lower_strip(comp)
             if key_name not in requestId:
-                logger.error(f'{key_name} not in requestId')
+                if is_debug: logger.error(f'{key_name} not in requestId')
             id_list.append(requestId[key_name])
 
         while True:
@@ -399,7 +401,7 @@ class ReqFile(ReusltData):
         
         if not isReload:
             self._set_request_data()
-            logger.warning(f'ReqFile: {self.name} do not reload!!!')
+            if is_debug: logger.warning(f'ReqFile: {self.name} do not reload!!!')
             return None
 
         f = open(file_path,'r')
@@ -785,7 +787,7 @@ class DataModel:
             self.objs       = DataModel.models[name].objs
             self.file_types = DataModel.models[name].file_types
             self.others     = DataModel.models[name].others
-            logger.warning(f'DataModel["{name}"] is exists, using old data.')
+            if is_debug: logger.info(f'DataModel["{name}"] is exists, using exist data.')
 
     def __getitem__(self, k): return self.objs[k]
 
@@ -793,7 +795,8 @@ class DataModel:
 
         assert os.path.exists(file_path)
         # assert not name in self.objs
-        if name in self.objs: logger.warning(f'DataModel.new_file: {name} is exists, cover')
+        if name in self.objs: 
+            if is_debug: logger.warning(f'DataModel.new_file: {name} is exists, cover')
 
         # ==============================
         file_types = self.file_types

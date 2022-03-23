@@ -5,14 +5,17 @@
 
 # 标准库
 from pprint import pprint, pformat
+import logging
 
 # 自建库
 from tcp_car import *
 import tcp_cmd_fun as tcmdf
-# from pyadams.tcp_cmd.tcp_car import *
-# import pyadams.tcp_cmd.tcp_cmd_fun as tcmdf
 
 
+# ----------
+logger = logging.getLogger('tcp_car_static_only')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 def parse_tire_locs(tire_locs):
@@ -129,11 +132,13 @@ def sim_static_only(params, res_path=None):
     #                 'TR_Front_Tires.tir_wheel',
     #                 'TR_Rear_Tires.til_wheel',
     #                 'TR_Rear_Tires.tir_wheel']}
+    if is_debug: logger.debug(f"Call sim_static_only")
 
     model_name = params['model_name']
     
     # -------------------    
     if res_path==None:
+        if is_debug: logger.debug(f"sim static")
         result_static = tcmdf.sim_car_full_static(params) # 静态计算
         res_path = result_static['res_path']
     
@@ -179,6 +184,9 @@ def sim_static_only(params, res_path=None):
         'Axles': tire_data['Axles'], # 轮胎所属车轴
     }
     pass
+
+    if is_debug: logger.debug(f"vehicle_data:\n{pformat(vehicle_data)}")
+    if is_debug: logger.debug(f"End sim_static_only")
     return vehicle_data
     
 

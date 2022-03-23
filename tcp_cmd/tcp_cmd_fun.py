@@ -11,7 +11,6 @@ from pprint import pprint
 import time
 
 # 自建库
-# from pyadams.call import tcplink
 import tcp_link
 cmd_send = tcp_link.cmds_run # 直接运行,未处理的多个命令行
 query_send = tcp_link.cmd_send
