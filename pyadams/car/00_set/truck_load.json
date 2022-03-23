@@ -1,0 +1,59 @@
+{
+	// car.truck_load 的设置
+	"car_param": {
+	    "mass_h": 1058.13,
+	    "wheel_base": 3360,
+	    "wheel_track": 1635.7,
+	    "mass_x": 1769,
+	    "mass_full": 4520.7
+	},
+
+	"event_param": {
+	    "single_hole_ratio": 1,     
+		//单轮过坑
+	    "single_jack_ratio": 1,     
+		//单轮顶起
+	    "acc_g": 0.4 ,              
+		//后驱向前加速
+	    "front_brake_g": 0.8,       
+		//前进紧急制动
+	    "rear_brake_g": 0.3,        
+		//倒车紧急制动
+	    "brake_lateral_x": 0.8,     
+		//转向制动 - 制动
+	    "brake_lateral_y": 0.4,     
+		//转向制动 - 转向
+	    "lateral_g": 0.5,           
+		//转向
+	    "diagonal_jack_ratio": 0.5, 
+		//对角顶起(扭曲路)
+	    "z_g":2
+		//重力加速度
+	},
+
+	"calc_param": {
+	    "name": "T5DB",
+	    "over_num":12,
+	    "front_asy_path": "//sjnas02/BRDI03/4.VehicleDynamic/01_model/ADAMS_Data/T5DB.cdb/assemblies.tbl/T5DB_front_sus.asy",
+	    "rear_asy_path": "//sjnas02/BRDI03/4.VehicleDynamic/01_model/ADAMS_Data/T5DB.cdb/assemblies.tbl/T5DB_rear_sus.asy",
+	    "run_dir": "E:/adams_work"
+	},
+
+	"request_param": {
+	    "front": {
+		    	"req":["L_shock_to_frame_Force", "L_shock_to_frame_Force", "L_shock_to_frame_Force", "R_shock_to_frame_Force", "R_shock_to_frame_Force", "R_shock_to_frame_Force"], 
+	            "comp":["Fx_front", "Fy_front", "Fz_front", "Fx_front", "Fy_front", "Fz_front"]
+		        },
+	    "rear" : {"req":["L_shock_to_frame_Force", "L_shock_to_frame_Force", "L_shock_to_frame_Force", "R_shock_to_frame_Force", "R_shock_to_frame_Force", "R_shock_to_frame_Force"], 
+	            "comp":["Fx_rear", "Fy_rear", "Fz_rear", "Fx_rear", "Fy_rear", "Fz_rear"]
+		        }
+	},
+
+	"csv_param": {
+	    "num_force_comp": 6, 
+		//六分力 or n分力
+	    "csv_view_path": "E:/adams_work/__view.csv", 
+	    "csv_hm_path": "E:/adams_work/__hm.csv", 
+	    "excel_path": "E:/adams_work/T5DB_truck2axle_force.xlsx"
+	}
+}

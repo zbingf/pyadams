@@ -1,17 +1,27 @@
 """
-    检查对车架的力，参考坐标是否接地
-    adm读取
+    Request检查
+
+        检查对车架的力，参考坐标是否接地
+    
+    读取方式: 直接读取adm文件
+
     仅仅适用于 request force 数据获取
 """
 
+# 标准库
 import re
-from pyadams.file import admfile
-
 import logging
 import os.path
-PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
+
+
+# 自建库
+from pyadams.file import admfile
+
+
+# ----------
+logger = logging.getLogger('request_check')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 class ReferenceMarkCHeck:
@@ -19,7 +29,6 @@ class ReferenceMarkCHeck:
     def __init__(self, adm_path):
 
         self.adm_obj = admfile.AdmCar(adm_path)
-
 
     def reference_mark_check(self, target_str='to_frame_force', target_part_name='ground'):
         """

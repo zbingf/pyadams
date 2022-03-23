@@ -201,16 +201,16 @@ def auto_spring_preload(record_state=1, **params_replace):
     if is_debug: logging.debug("End auto_spring_preload")
 
 
-import coverage
-cov = coverage.coverage()
-cov.start()
+# import coverage
+# cov = coverage.coverage()
+# cov.start()
 
 auto_brake(1, {'sim_type':'normal'})
 auto_static_only(1, sim_type='normal')
 auto_spring_preload(1, sim_type='normal')
 
-cov.stop()
-cov.save()
+# cov.stop()
+# cov.save()
 
 # import sys
 # calc_type = sys.argv[1].strip().lower()

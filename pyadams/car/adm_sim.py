@@ -1,16 +1,12 @@
 """
-    adm文件仿真及相关应用
-
+    adm文件的仿真及相关应用
+        + adm仿真
+        + 仿真文件管理
+        + 
+    
 """
 
-from pyadams.call import threadingrun
-from pyadams.file import admfile, result
-from pyadams.call import admrun
-from pyadams.datacal import OAT
-from pyadams.datacal import var_map
-DataModel = result.DataModel
-DataModelCompare = result.DataModelCompare
-
+# 标准库
 import re
 import os
 import time
@@ -18,28 +14,44 @@ import copy
 import shutil
 import pprint
 import threading
+import logging
+
+# 调用库
 import pysnooper
 
-import logging
-import os.path
-PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
+# 自建库
+from pyadams.call import threadingrun
+from pyadams.file import admfile, result
+from pyadams.call import admrun
+from pyadams.datacal import OAT # 试验设计, 正交试验
+from pyadams.datacal import var_map
+DataModel = result.DataModel
+DataModelCompare = result.DataModelCompare
 
+
+# ----------
+logger = logging.getLogger('adm_sim')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 # ==============================
 # 仿真文件管理
-class AdmFileData: # 仿真文件管理
+
+class AdmFileManager: 
     """
+        仿真文件管理
+        
         源路径
-        self.adm_path       str
-        self.acf_path       str
-        self.mtx_paths      [str, str]
-        self.target_dir     str 新路径目录
+            self.adm_path       str
+            self.acf_path       str
+            self.mtx_paths      [str, str]
+
+            self.target_dir     str 新路径目录
+
         新路径
-        self.new_adm_path   str
-        self.new_acf_path   str
-        self.new_mtx_paths  [str, str]
+            self.new_adm_path   str
+            self.new_acf_path   str
+            self.new_mtx_paths  [str, str]
     """
     def __init__(self, adm_path):
 
@@ -50,18 +62,18 @@ class AdmFileData: # 仿真文件管理
         self.rdf_paths = []
         self.target_dir = None
 
-        if not self.is_acf_exists():
+        if not self._is_acf_exists():
             with open(self.acf_path, 'w') as f: pass
-            logger.warning('acf路径不存在, 创建新文件')
+            if is_debug: logger.warning('acf路径不存在, 创建新文件')
 
-        if not self.is_xml_exists():
+        if not self._is_xml_exists():
             with open(self.xml_path, 'w') as f: pass
-            logger.warning('xml路径不存在, 创建新文件')
+            if is_debug: logger.warning('xml路径不存在, 创建新文件')
 
-        self.parase_adm_for_mtx()
-        self.parase_adm_for_rdf()
+        self._parase_adm_for_mtx()
+        self._parase_adm_for_rdf()
 
-    def parase_adm_for_rdf(self):
+    def _parase_adm_for_rdf(self):
         """
             解析adm文件 , 获取rdf文件路径
         """
@@ -73,6 +85,7 @@ class AdmFileData: # 仿真文件管理
         # adm文件读取
         with open(adm_path, 'r') as f:
             lines = f.readlines()
+
         # 柔性体mtxs文件查找
         rdfs = []
         for loc, line in enumerate(lines):
@@ -91,14 +104,14 @@ class AdmFileData: # 仿真文件管理
                 temp_path = os.path.join(temp_dir, name)
                 if not os.path.exists(temp_path): 
                     # 没找到路径不列入计算
-                    logger.info(f'未检测到rdf路径: {temp_path}')
+                    if is_debug: logger.info(f'未检测到rdf路径: {temp_path}')
                     continue
             rdf_paths.append(temp_path)
 
         self.rdf_paths = rdf_paths
         return rdf_paths
 
-    def parase_adm_for_mtx(self):
+    def _parase_adm_for_mtx(self):
         """
             解析adm文件 , 获取mtx文件路径
         """
@@ -127,15 +140,15 @@ class AdmFileData: # 仿真文件管理
 
         return self.mtx_paths
 
-    def is_acf_exists(self):
+    def _is_acf_exists(self):
         """ acf文件是否存在 """
         return os.path.exists(self.acf_path)
 
-    def is_xml_exists(self):
+    def _is_xml_exists(self):
         """ xml文件是否存在 """
         return os.path.exists(self.xml_path)
 
-    def create_target_dir(self):
+    def _create_target_dir(self):
         """ 创建目标路径 """
         target_dir = self.target_dir
         if not os.path.exists(target_dir):
@@ -144,7 +157,7 @@ class AdmFileData: # 仿真文件管理
 
         return target_dir
 
-    def copy_files(self):
+    def _copy_files(self):
         """ 复制文件到目标路径 """
         target_dir = self.target_dir
         new_adm_path = os.path.join(target_dir, os.path.basename(self.adm_path))
@@ -184,7 +197,7 @@ class AdmFileData: # 仿真文件管理
             'target_dir': target_dir,
         }
 
-        logger.info(f'文件新路径: {path_dir}')
+        if is_debug: logger.info(f'文件新路径: {path_dir}')
         
         return path_dir
 
@@ -192,8 +205,8 @@ class AdmFileData: # 仿真文件管理
         """ 更新&复制路径 """
 
         self.target_dir = os.path.abspath(target_dir)
-        self.create_target_dir()
-        path_dir = self.copy_files()
+        self._create_target_dir()
+        path_dir = self._copy_files()
 
         return path_dir
 
@@ -210,8 +223,8 @@ class AdmEditData: # adm文件编辑
         self.edits = []
 
         self.adm_path = adm_path
-        self.amdobj = admfile.AdmCar(adm_path)
-        self.editobj = admfile.AdmEdit(self.amdobj)
+        self.amdobj = admfile.AdmCar(adm_path)      # adm解析
+        self.editobj = admfile.AdmEdit(self.amdobj) # adm变更
 
     def edit_values_data(self, value_cmd, list1d_value):
         """ 
@@ -271,7 +284,7 @@ class AdmEditData: # adm文件编辑
         with open(edit_file_path, 'r', encoding='utf-8') as f: 
             temp_str = f.read()
 
-        logger.info(f'edit_str: {temp_str}')
+        if is_debug: logger.info(f'edit_str: {temp_str}')
 
 
         return edit_cmdlists
@@ -300,7 +313,7 @@ class AdmSimControl:
             AdmSimControl.model_names.append(adm_path)            
             AdmSimControl.models[adm_path] = self
 
-            self.admfd_obj     = AdmFileData(adm_path)
+            self.admfd_obj     = AdmFileManager(adm_path)
             self.res_paths     = {}
             self.new_adm_paths = {}
             self.sub_dirs      = {}
@@ -399,7 +412,7 @@ class AdmSimControl:
             new_func = threadingrun.threading_func(self.adm_sim, threadmax=threadmax)
             thread   = threading.Thread(target=new_func, args=(sub_name, ))
             thread.start()
-            logger.info(f'running:{sub_name}')
+            if is_debug: logger.info(f'running:{sub_name}')
             threads.append(thread)
             threadmax.acquire()
             time.sleep(1)
@@ -559,7 +572,7 @@ class AdmParam:
             new_key = new_key.replace('2','U')
             self.value_dic['v_'+new_key] = results[key]
 
-        logger.info(f'set_value_orthogonal:results:\n{results}')
+        if is_debug: logger.info(f'set_value_orthogonal:results:\n{results}')
 
         return None
 
@@ -725,7 +738,7 @@ class AdmResult:
             }
 
             self.dmc_obj.run(sub_name, lower_name, temp, pdfType=pdfType)
-            logger.info('创建pdf:{}'.format(temp['docx_path'][:-4]+'pdf'))
+            if is_debug: logger.info('创建pdf:{}'.format(temp['docx_path'][:-4]+'pdf'))
 
         return self.dmc_obj.result_compare
 
@@ -770,10 +783,10 @@ class AdmResult:
 # ==================================+
 # 测试
 
-def test_AdmFileData():
+def test_AdmFileManager():
 
     adm_path = r'..\tests\car_adm_sim\cuoban_v30_maintain.adm'
-    admfd_obj = AdmFileData(adm_path)
+    admfd_obj = AdmFileManager(adm_path)
     admfd_obj.updata_dir(r'..\tests\car_adm_sim\temp')
 
     
@@ -782,7 +795,7 @@ def test_AdmFileData():
 
 def test_AdmEditData():
     
-    admfd_obj = test_AdmFileData()
+    admfd_obj = test_AdmFileManager()
 
     admed_obj = AdmEditData(admfd_obj.new_adm_path)
 
@@ -821,11 +834,11 @@ def test_AdmEditData():
 def test_admsim():
 
     # adm_path = r'D:\document\ADAMS\braking_brake.adm'
-    # admfd_obj = AdmFileData(adm_path)
+    # admfd_obj = AdmFileManager(adm_path)
     # admfd_obj.updata_dir(r'..\tests\car_adm_sim')
     # return None
 
-    # admfd_obj = test_AdmFileData()
+    # admfd_obj = test_AdmFileManager()
     # adm_path  = admfd_obj.new_adm_path
 
     adm_path = r'..\tests\car_adm_sim\braking_brake.adm'
@@ -875,7 +888,7 @@ def test_admsim():
 def test_AdmResult():
 
     adm_path = r'..\tests\car_adm_sim\braking_brake.adm'
-    admfd_obj = AdmFileData(adm_path)
+    admfd_obj = AdmFileManager(adm_path)
     admfd_obj.updata_dir(r'..\tests\car_adm_sim\temp')
     adm_path = admfd_obj.new_adm_path
     # return None
@@ -927,7 +940,7 @@ def test_AdmResult():
         admsim_obj.set_sub_dir(sub_name)
         admsim_obj.set_adm_edit(sub_name, edit_params[sub_name])
         admsim_obj.set_sim_param(sub_name, sim_param)
-    return None
+    # return None
     admsim_obj.amd_sim_threading(max_threading)
     res_paths = admsim_obj.res_paths
 
@@ -941,7 +954,11 @@ def test_AdmResult():
 
 
 if __name__=='__main__':
-    logging.basicConfig(level=logging.INFO)
+    pass
+    log_format = '%(levelname)s : %(module)s : %(funcName)s : %(lineno)s : %(message)s'
+    logging.basicConfig(format=log_format)
+    
+    # logging.basicConfig(level=logging.INFO)
     # test_AdmEditData()
     # test_admsim()
 

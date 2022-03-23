@@ -28,12 +28,13 @@
             + 总质量 mass_full
             + 轴距 wheel_base
             + 轮距 wheel_track
+    
+    仿真形式: cmd 调用 adams 进行仿真
 
 """
 
+# 标准库
 import abc
-import pprint
-import pysnooper
 import copy
 import time
 import threading
@@ -41,19 +42,26 @@ import os
 import re
 import json
 import copy
+import logging
+import pprint
+import csv
+
+# 调用库
+import xlsxwriter
+
+# 自建库
+import pysnooper
 from pyadams.call import threadingrun, cmdlink
 from pyadams.file import result
 
-import logging
 
-try:
-    PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-    LOG_PATH = PY_FILE_NAME+'.log'
-    logger = logging.getLogger(PY_FILE_NAME)
-except:
-    logger = logging.getLogger('truck_load')
+# ----------
+logger = logging.getLogger('truck_load')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
+# ----------
 DataModel = result.DataModel
 cmd_file_send = cmdlink.cmd_file_send
 cmd_send = cmdlink.cmd_send
@@ -746,7 +754,7 @@ class Truck2Axle(Car):
             mass_d['dx'] = sh_obj.calc_x_delta_mass()
             mass_d['dy'] = sh_obj.calc_y_delta_mass()
             self.add_mass_event('single_hole_{}_{}'.format(key, single_hole_ratio), mass_d)
-        logger.info(f"Truck2Axle:工况创建: 单轮过坑")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 单轮过坑")
 
         # 单轮顶起
         single_jack_ratio = self.event_param['single_jack_ratio']
@@ -758,7 +766,7 @@ class Truck2Axle(Car):
             mass_d['dx'] = sj_obj.calc_x_delta_mass()
             mass_d['dy'] = sj_obj.calc_y_delta_mass()
             self.add_mass_event('single_jack_{}_{}'.format(key, single_jack_ratio), mass_d)
-        logger.info(f"Truck2Axle:工况创建: 单轮顶起")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 单轮顶起")
 
         # 加速工况
         acc_g = self.event_param['acc_g']
@@ -769,7 +777,7 @@ class Truck2Axle(Car):
         mass_d['dx'] = ra_obj.calc_x_delta_mass()
         mass_d['dy'] = ra_obj.calc_y_delta_mass()
         self.add_mass_event('acc_{}g'.format(round(acc_g, NAME_ROUND)), mass_d)
-        logger.info(f"Truck2Axle:工况创建: 加速工况{acc_g}g")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 加速工况{acc_g}g")
 
         # 向前制动
         front_brake_g = self.event_param['front_brake_g']
@@ -780,7 +788,7 @@ class Truck2Axle(Car):
         mass_d['dx'] = brake_obj.calc_x_delta_mass()
         mass_d['dy'] = brake_obj.calc_y_delta_mass()
         self.add_mass_event('brake_{}g'.format(round(front_brake_g, NAME_ROUND)), mass_d)
-        logger.info(f"Truck2Axle:工况创建: 向前制动{front_brake_g}g")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 向前制动{front_brake_g}g")
 
         # 倒车制动
         rear_brake_g = self.event_param['rear_brake_g']
@@ -792,7 +800,7 @@ class Truck2Axle(Car):
         mass_d['dx'] = rear_brake_obj.calc_x_delta_mass()
         mass_d['dy'] = rear_brake_obj.calc_y_delta_mass()
         self.add_mass_event('brake_{}g'.format(round(rear_brake_g, NAME_ROUND)), mass_d)
-        logger.info(f"Truck2Axle:工况创建: 倒车制动{rear_brake_g}g")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 倒车制动{rear_brake_g}g")
 
         # 转向工况
         lateral_g = self.event_param['lateral_g']
@@ -806,7 +814,7 @@ class Truck2Axle(Car):
             mass_d['dy'] = st_obj.calc_y_delta_mass()
             event_name = 'lateral_{}g'.format(round(lateral_g, NAME_ROUND))
             self.add_mass_event(event_name, mass_d)
-        logger.info(f"Truck2Axle:工况创建: 转向工况{lateral_g}g")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 转向工况{lateral_g}g")
 
         # 转向制动工况
         brake_lateral_x = self.event_param['brake_lateral_x']
@@ -831,7 +839,7 @@ class Truck2Axle(Car):
             event_name = 'brake_{}g_lateral_{}g'.format(round(brake_lateral_x, NAME_ROUND), round(brake_lateral_y, NAME_ROUND))
             self.add_mass_event(event_name, mass_d)
 
-        logger.info(f"Truck2Axle:工况创建: 转向制动工况, 制动{brake_lateral_x}g, 转向{brake_lateral_y}g")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 转向制动工况, 制动{brake_lateral_x}g, 转向{brake_lateral_y}g")
 
         # 对角顶起
         diagonal_jack_ratio = self.event_param['diagonal_jack_ratio']
@@ -843,7 +851,7 @@ class Truck2Axle(Car):
             mass_d['dy'] = dj_obj.calc_y_delta_mass()
             event_name = 'diagonal_jack_{}_{}'.format(side, diagonal_jack_ratio)
             self.add_mass_event(event_name, mass_d)
-        logger.info(f"Truck2Axle:工况创建: 对角顶起")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: 对角顶起")
 
         # 重力加速度
         z_g = self.event_param['z_g']
@@ -854,7 +862,7 @@ class Truck2Axle(Car):
         mass_d['dy'] = v_obj.calc_y_delta_mass()
         event_name = 'vertical_{}g'.format(z_g)
         self.add_mass_event(event_name, mass_d)
-        logger.info(f"Truck2Axle:工况创建: {z_g}g重力")
+        if is_debug: logger.info(f"Truck2Axle:工况创建: {z_g}g重力")
 
         return None
 
@@ -862,6 +870,7 @@ class Truck2Axle(Car):
 # =================================================
 # =================================================
 # 工况制作
+
 _LCF_TITLE = """$---------------------------------------------------------------------MDI_HEADER
 [MDI_HEADER]
  FILE_TYPE     =  'lcf'
@@ -907,6 +916,7 @@ $ (c18)    roll res        torque (z-axis)                       right
 $ (c19)    steering        force / steer angle / rack travel
 { whl_z_l      whl_z_r        lat_l        lat_r      dam_rad_l      dam_rad_r      dam_for_l      dam_for_r      align_l      align_r      brake_l      brake_r      drive_l      drive_r      otm_l      otm_r      rollres_l      rollres_r        steer}
 """
+
 # 开头读取
 try:
     lcf_template = os.path.join(os.path.dirname(__file__), r'template\lcf_title_force_load.txt')
@@ -915,12 +925,11 @@ try:
         with open(lcf_template, 'r') as f:
             LCF_TITLE = f.read()
     else:
-        logger.info(f"lcf模板路径不存在： {lcf_template} ; LCF_TITLE = _LCF_TITLE")
+        if is_debug: logger.info(f"lcf模板路径不存在： {lcf_template} ; LCF_TITLE = _LCF_TITLE")
         LCF_TITLE = _LCF_TITLE
 except:
     LCF_TITLE = _LCF_TITLE
-    logger.info(f"lcf_template设置失败: LCF_TITLE = _LCF_TITLE")
-
+    if is_debug: logger.info(f"lcf_template设置失败: LCF_TITLE = _LCF_TITLE")
 
 
 # 过渡状态创建
@@ -1051,8 +1060,8 @@ class TruckForceEvent2AxleLcf:
 
         self.lcf_path = file_path
         self.over_num = over_num
-        logger.info(f"TruckForceEvent2AxleLcf: lcf创建 over_num(过渡step):{over_num}")
-        logger.info(f"TruckForceEvent2AxleLcf: lcf创建 lcf_path:{file_path}")
+        if is_debug: logger.info(f"TruckForceEvent2AxleLcf: lcf创建 over_num(过渡step):{over_num}")
+        if is_debug: logger.info(f"TruckForceEvent2AxleLcf: lcf创建 lcf_path:{file_path}")
         return None
 
     def get_status_locs(self, start_n):
@@ -1081,6 +1090,7 @@ class TruckForceEvent2AxleLcf:
                 loc_last = loc_n
 
             return locs
+
 
 # =================================================
 # =================================================
@@ -1278,8 +1288,8 @@ class TruckLoad2AxleControl:
         car_param = self.car_param
         event_param = self.event_param
 
-        logger.info(f"TruckLoad2AxleControl.load_calc 开始")
-        logger.info(f"  仿真计算 calc_param:\n{change_dict_to_str(calc_param)}")
+        if is_debug: logger.info(f"TruckLoad2AxleControl.load_calc 开始")
+        if is_debug: logger.info(f"  仿真计算 calc_param:\n{change_dict_to_str(calc_param)}")
 
         name = calc_param['name']
         front_asy_path = calc_param['front_asy_path']
@@ -1370,8 +1380,8 @@ class TruckLoad2AxleControl:
         self.tfe_obj = tfe_obj
         self.event_names = tfe_obj.event_names
 
-        # logger.info(f"  仿真计算, 结束, res_dict:{change_dict_to_str(res_dict)}")
-        logger.info(f"TruckLoad2AxleControl.load_calc 结束")
+        # if is_debug: logger.info(f"  仿真计算, 结束, res_dict:{change_dict_to_str(res_dict)}")
+        if is_debug: logger.info(f"TruckLoad2AxleControl.load_calc 结束")
         return self.res_dict
 
     def parse_res(self, request_param):
@@ -1390,9 +1400,9 @@ class TruckLoad2AxleControl:
             }
 
         """
-        logger.info(f"TruckLoad2AxleControl.parse_res: ")
-        # logger.info(f"  res读取, request_param:{change_dict_to_str(request_param)}")
-        logger.info(f"  res读取, request_param:{request_param}")
+        if is_debug: logger.info(f"TruckLoad2AxleControl.parse_res: ")
+        # if is_debug: logger.info(f"  res读取, request_param:{change_dict_to_str(request_param)}")
+        if is_debug: logger.info(f"  res读取, request_param:{request_param}")
 
         self.request_param = request_param
         data_name = self.calc_param['name']
@@ -1420,7 +1430,7 @@ class TruckLoad2AxleControl:
         self.data_full = data_full
         self.reqs_full  = reqs_full
         self.comps_full = comps_full
-        logger.info(f"TruckLoad2AxleControl.parse_res 结束")
+        if is_debug: logger.info(f"TruckLoad2AxleControl.parse_res 结束")
         return data_full
 
     def get_status(self, loc):
@@ -1471,8 +1481,8 @@ class TruckLoad2AxleControl:
                 'csv_hm_path' : csv 对接hm二次开发用
             }
         """
-        logger.info(f"TruckLoad2AxleControl.print_to_csv 开始")
-        logger.info(f"  导出CSV, csv_param:{change_dict_to_str(csv_param)}")
+        if is_debug: logger.info(f"TruckLoad2AxleControl.print_to_csv 开始")
+        if is_debug: logger.info(f"  导出CSV, csv_param:{change_dict_to_str(csv_param)}")
 
         num_force_comp = csv_param['num_force_comp']
         csv_view_path = csv_param['csv_view_path']
@@ -1553,13 +1563,10 @@ class TruckLoad2AxleControl:
         with open(csv_view_path, 'w') as f:
             f.write(output_str)
 
-        logger.info("  导出CSV, 完成")
-        logger.info(f"TruckLoad2AxleControl.print_to_csv 结束")
+        if is_debug: logger.info("  导出CSV, 完成")
+        if is_debug: logger.info(f"TruckLoad2AxleControl.print_to_csv 结束")
         return None
 
-
-import csv
-import xlsxwriter
 
 # csv 转 excel  xlsx
 def csv2excel_xlsx(workbook, csv_path, sheet_name):
@@ -1871,8 +1878,8 @@ def test_TruckLoad2AxleControl2(json_path):
 
 if __name__=='__main__':
     pass
-    logging.basicConfig(level=logging.INFO)
-
+    log_format = '%(levelname)s : %(module)s : %(funcName)s : %(lineno)s : %(message)s'
+    logging.basicConfig(format=log_format)
     # test_Truck2Axle()
     # test_SingleHole2Axle()
     # test_SingleJack2Axle()
@@ -1889,5 +1896,5 @@ if __name__=='__main__':
 
     # test_sim_sus()
     # test_TruckLoad2AxleControl()
-    test_TruckLoad2AxleControl2('truck_load.json')
+    test_TruckLoad2AxleControl2('./00_set/truck_load.json')
 

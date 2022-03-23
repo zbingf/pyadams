@@ -1,11 +1,15 @@
 """
     leafspring 2019版 编辑
     针对ADAMS 2019版 钢板弹簧工具箱 - adm文件更改及后处理计算
-        
-
 """
+
+# 标准库
 import re
+
+
+# 调用库
 from pyadams.call import admrun
+
 
 STR_BUSHING = '''
 !                       adams_view_name='BUSHING_#b_id#'
@@ -19,7 +23,11 @@ BUSHING/#b_id#
 !
 '''
 
-def read_leafspring_adm(adm_path): # 读取leafspring adm文件,并解析分离 chassis bushing
+def read_leafspring_adm(adm_path): 
+    """
+        读取leafspring adm文件,并解析分离 chassis bushing
+    """
+
     # 读取文档
     with open(adm_path, 'r') as f:
         file_lines = f.read().split('\n')
@@ -46,6 +54,7 @@ def read_leafspring_adm(adm_path): # 读取leafspring adm文件,并解析分离 
 
     return lines_new,line_cb
 
+
 def insert_lines_end(lines,lines_tar):
     # 结尾插入数据
     for n in range(1,100):
@@ -56,6 +65,7 @@ def insert_lines_end(lines,lines_tar):
             break
 
     return lines[:n_deinsert] + lines_tar + lines[n_deinsert:]
+
 
 def parse_chassis_bushing(line_cb):
 
@@ -109,6 +119,7 @@ def parse_chassis_bushing(line_cb):
     bushings.append(bushing_dic)
     # pprint.pprint(bushings)
     return bushings
+
 
 def create_bushing(bushings, param_in=None):
 
@@ -181,6 +192,7 @@ def create_bushing(bushings, param_in=None):
 
     return lines_bushing
 
+
 def del_senser_by_id(lines, sensor_ids):
 
     is_sensor_start = False
@@ -203,6 +215,7 @@ def del_senser_by_id(lines, sensor_ids):
         new_lines.append(line)
 
     return new_lines
+
 
 def main_edit_adm_leafspring(adm_path, new_adm_path, param_in=None):  # 主程序
     

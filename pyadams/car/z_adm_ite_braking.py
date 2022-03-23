@@ -1,4 +1,8 @@
-# 制动模块
+"""
+    制动模块
+    
+"""
+# 
 # braking
 import re
 from pyadams.car import adm_sim
@@ -97,7 +101,7 @@ new_xml_path = None
 edit_xml_brake(xml_path, finalValue, start_time, duration=duration, initial_velocity=initial_velocity, new_xml_path=new_xml_path)
 
 adm_path = r'D:\document\ADAMS\braking_brake.adm'
-# admfd_obj = adm_sim.AdmFileData(adm_path)
+# admfd_obj = adm_sim.AdmFileManager(adm_path)
 # admfd_obj.updata_dir(r'D:\document\ADAMS\temp1')
 sim_param = {'simtype':adm_sim.CAR, 'samplerate':None, 'simtime':None, 'step':None, 
     'version':'2017.2', 'simlimit':60}
