@@ -2,7 +2,7 @@
 	// 制动设置
     "auto_brake" : {
 	    "word_path": "./01_template/post_brake.docx",
-	    "new_word_path": "./02_result/new_post_brake.docx"
+	    "new_word_path": "./02_result/new_#model_name#.docx"
     },
     
     // 弹簧预载设置

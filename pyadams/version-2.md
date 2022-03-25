@@ -7,8 +7,8 @@
 
 + run
     + admrun.py         | adm模型运行
-    + cmdlink.py        | cmd命令控制adams,后台调用运行
-    + tcplink.py        | tcp连接adams
+    + cmd_link.py        | cmd命令控制adams,后台调用运行
+    + tcp_link.py        | tcp连接adams
     + multirun.py       | 多进程计算
     + threadingrun.py   | 多线程计算
 

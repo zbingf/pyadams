@@ -17,7 +17,7 @@ LOG_PATH = PY_FILE_NAME+'.log'
 logger = logging.getLogger(PY_FILE_NAME)
 
 
-from pyadams.call import cmdlink
+from pyadams.call import cmd_link
 
 # cmd 调用命令
 CMD = r"""
@@ -88,7 +88,7 @@ def admrun(adm_path,simtime,samplerate,simlimit=SIM_LIMIT_MINUTE,version='2017.2
     cmd = CMD.format(
         obj.acfpath[:2],
         os.path.split(obj.acfpath)[0],
-        cmdlink.bat_path_search(version),
+        cmd_link.bat_path_search(version),
         obj.acfpath)
     
     bat_path = adm_path[:-3]+'bat'
@@ -97,7 +97,7 @@ def admrun(adm_path,simtime,samplerate,simlimit=SIM_LIMIT_MINUTE,version='2017.2
     
     res_path = adm_path[:-3]+'res'
 
-    return cmdlink.call_bat_sim(bat_path, res_path, simlimit=simlimit)
+    return cmd_link.call_bat_sim(bat_path, res_path, simlimit=simlimit)
 
 
 def admrun_car(adm_path, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
@@ -124,7 +124,7 @@ def admrun_car(adm_path, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
     cmd = CMD.format(
         adm_path[:2],
         os.path.split(acf_path)[0],
-        cmdlink.bat_path_search(version),
+        cmd_link.bat_path_search(version),
         acf_path)
     
     with open(bat_path,'w') as f:
@@ -132,7 +132,7 @@ def admrun_car(adm_path, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
 
     res_path = adm_path[:-3]+'res'
 
-    return cmdlink.call_bat_sim(bat_path, res_path, simlimit=simlimit)
+    return cmd_link.call_bat_sim(bat_path, res_path, simlimit=simlimit)
 
 
 def admrun_car_sus(adm_path, simtime, step, version='2017.2', simlimit=SIM_LIMIT_MINUTE):
@@ -155,7 +155,7 @@ def admrun_car_sus(adm_path, simtime, step, version='2017.2', simlimit=SIM_LIMIT
     cmd = CMD.format(
         adm_path[:2],
         os.path.split(acf_path)[0],
-        cmdlink.bat_path_search(version),
+        cmd_link.bat_path_search(version),
         acf_path)
 
     with open(bat_path, 'w') as f:
@@ -179,7 +179,7 @@ def admrun_car_sus(adm_path, simtime, step, version='2017.2', simlimit=SIM_LIMIT
     # 批处理调用
     res_path = adm_path[:-3]+'res'
 
-    return cmdlink.call_bat_sim(bat_path, res_path, simlimit=simlimit)
+    return cmd_link.call_bat_sim(bat_path, res_path, simlimit=simlimit)
 
 
 # ==============================================

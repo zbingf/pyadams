@@ -10,18 +10,28 @@
 
     2020/11
 """
-from pyadams import datacal
 
+
+# 标准库
 import math
 import re
 import copy
-import pysnooper
-
 import os.path
 import logging
-PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
+
+# 调用库
+import pysnooper
+
+# 自建库
+from pyadams import datacal
+
+
+# ----------
+logger = logging.getLogger('adm_file')
+logger.setLevel(logging.DEBUG)
+is_debug = True
+
+
 
 # ===================================
 # 子函数
@@ -33,6 +43,7 @@ linear_spring_data = datacal.linear_spring_data
 linear_single_spring_data = datacal.linear_single_spring_data
 linear_damer_data = datacal.linear_damer_data
 linear_spring_data = datacal.linear_spring_data
+
 
 def values2list(values,locs): # 数值列表定位，含正负
     """
@@ -63,7 +74,7 @@ class AdmFile:
         self.filepath = filepath
         self.file_read()
         self.filelist_cal()
-        self.model = AdmModel(self.cmdlist,self.filelist) # adm 数据辨识
+        self.model = AdmModel(self.cmdlist, self.filelist) # adm 数据辨识
 
     def file_read(self): # adm文件读取
         """
@@ -191,13 +202,19 @@ class AdmFile:
             f.write(self.filestr)
 
 
-class AdmCar(AdmFile): # 基于AdmFile扩展模型读取范围
+class AdmCar(AdmFile): # 基于AdmFile, 扩展模型读取范围
     """
         在AdmFile基础上扩展解析范围
-        用于car-adm模型
-        对AdmModel数据进行再辨识
+            + car-adm模型
+            + 对AdmModel数据进行再辨识
+        
+        包含：
+            + car_spring
+            + car_damper
+            + car_road
+
     """
-    def __init__(self,filepath):
+    def __init__(self, filepath):
         super().__init__(filepath)
         
         self.car_spring = {}        # 弹簧解析实例，key为名称
@@ -336,6 +353,8 @@ class AdmModel:
         输入： cmdlist 命令组列表
         
         self.all 放置所有模块part/marker/join 实例
+        
+
         
     """
     def __init__(self, cmdlist, filelist):
@@ -514,6 +533,7 @@ class AdmCmd:
 
         # 位置信息
         self.loc = cmdlist[-1] 
+        
         # 是否编辑更新
         self.isEdit = False
 
@@ -1490,7 +1510,7 @@ class AdmRoad: # 路面路径解析
 
 class AdmSpring: # 弹簧编辑
     
-    def __init__(self,force_obj,spline_obj):
+    def __init__(self, force_obj, spline_obj):
         self.force_obj = force_obj
         self.spline_obj = spline_obj
         self.name = '.'.join(spline_obj.name.split('.')[:-1]).lower()
@@ -1561,7 +1581,7 @@ class AdmSpring: # 弹簧编辑
 
 class AdmDamper: # 减振器编辑
     
-    def __init__(self,force_obj,spline_obj):
+    def __init__(self, force_obj, spline_obj):
         self.force_obj = force_obj
         self.spline_obj = spline_obj
         self.name = '.'.join(spline_obj.name.split('.')[:-1]).lower()
@@ -1588,7 +1608,7 @@ class AdmDamper: # 减振器编辑
 
 class AdmCarBushing: # 衬套数据编辑
 
-    def __init__(self,spline_objs,array_objs):
+    def __init__(self, spline_objs, array_objs):
         self.name = '.'.join(spline_objs['tx_spline'].name.split('.')[:-1]).lower()
 
         self.num_dic = {'preload':6,'damper':4}
@@ -1812,13 +1832,14 @@ class AdmCarBushing: # 衬套数据编辑
         self.set_array(locs=ts,values=[c]*len(ts),edit_type='damper')
 
 
-class AdmFlex: # 柔性体文件辨识
-    def __init__(self,matrix_obj):
-        matrix_obj.filename
-        pass
+# class AdmFlex: # 柔性体文件辨识
+#     def __init__(self,matrix_obj):
+#         matrix_obj.filename
+#         pass
 
 
 # ===================================
+
 class AdmEdit: # values_cmd 字符串解析
     """
     格式
@@ -1888,8 +1909,8 @@ class AdmEdit: # values_cmd 字符串解析
         TR_Rear_Suspension.dal_ride_damper:10:1
         tr_front_suspension.dal_ride_damper:10:1
     """
-    def __init__(self,admobj): # AdmFile\AdmCar 的实例
-        self.obj = admobj
+    def __init__(self, admobj): 
+        self.obj = admobj   # AdmFile\AdmCar 的实例
 
     # @pysnooper.snoop()
     def edit(self,strcmd,values):

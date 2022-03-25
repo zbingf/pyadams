@@ -7,10 +7,10 @@
 ## call
 调用adams计算模块
 + admrun : 批处理调用 __Adams/Solve__ 运行 adm 模型文件
-+ cmdline : 批处理调用 __Adams__ 运行Adams cmd命令
++ cmd_link : 批处理调用 __Adams__ 运行Adams cmd命令
 + multirun : __多进程计算__ multiprocessing 多进程计算
 + threadingrun : __多线程计算__ threading模块应用
-+ tcplink : __TCP__ 方式与Adams通信,运行Adams cmd命令
++ tcp_link : __TCP__ 方式与Adams通信,运行Adams cmd命令
 
 ## car
 Adams/Car 应用模块

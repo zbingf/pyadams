@@ -1,25 +1,32 @@
 """
     稳态回转-后处理
-
-    
-    轮胎力request ： 包含tire_force 、 normal_
-
+    轮胎力request ： 包含 tire_force 、 normal_
 """
 
+# 标准库
+import json
+import math
+import os
+import logging
+from pprint import pprint, pformat
+
+# 调用库
+import numpy as np
+from scipy import interpolate
+
+
+# 自建库
 from pyadams.file import result, office_docx, file_edit
 DataModel = result.DataModel
 # from pyadams.datacal import spline
 from pyadams.car import post_handle_s
 from pyadams import datacal
-from scipy import interpolate
 
-import json
-import numpy as np
-import math
-import os
-import logging
-# logging.basicConfig(level=logging.INFO)   # logging设置
+
+# ----------
 logger = logging.getLogger('post_handle_crc')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 # 子函数
@@ -37,6 +44,7 @@ def single_to_UnivariateSpline(data, d=1, **keys):
     x = [n/d for n in range(len(data))]
     obj = interpolate.UnivariateSpline(x, data,**keys)
     return obj(x)
+
 
 # 获取轮胎的reqeust设置 req\comp
 def get_tire_normal_reqcomp(obj):
@@ -58,6 +66,7 @@ def get_tire_normal_reqcomp(obj):
     comps_tire = [str1.split('.')[-1] for str1 in tire_normals]
 
     return reqs_tire, comps_tire
+
 
 # 稳态回转后处理-主要计算模块
 def res_handle_crc_cal(res_path, L, docx_path=None, reqs=None, comps=None, spline_s=0.1):
@@ -289,6 +298,7 @@ def res_handle_crc_cal(res_path, L, docx_path=None, reqs=None, comps=None, splin
 
     return crc_data, data_plot
 
+
 # 评分计算
 def handle_crc_score(crc_data):
     """
@@ -359,6 +369,7 @@ def handle_crc_score(crc_data):
     }
 
     return score_data
+
 
 # word文档生成
 def handle_crc_docx(docx_path, crc_data, score_data):
@@ -432,6 +443,7 @@ def handle_crc_docx(docx_path, crc_data, score_data):
 
     return None
 
+
 # 稳态回转-主函数
 def handle_crc(res_path, docx_path, L, reqs, comps, spline_s):
     # print(kwargs, spline_s)
@@ -445,16 +457,19 @@ def handle_crc(res_path, docx_path, L, reqs, comps, spline_s):
 
     return crc_data, score_data, data_plot
 
+
 # 指定文档模板,并进行替换文字及图片
 def handle_crc_docx_template(template_path, new_docx_path, crc_data, score_data):
     """
         win32com 文档替换
+
     score_data = {
         'N_u' : N_u,    0.2g 不足转向度 评价
         'N_r' : N_r,    0.2g 车身侧倾度 评价
         'N_m' : N_m,    中性转向 评价
         '车辆类别' : 车辆类别,
     }
+
     crc_data = {
         'R0'                : R0, 
         'mid_steer_point'   : abs(lateralAcc[mid_steer_acc_loc]),
@@ -472,8 +487,10 @@ def handle_crc_docx_template(template_path, new_docx_path, crc_data, score_data)
     for fig_path, fig_name in zip(crc_data['fig_paths'], crc_data['fig_paths_name']):
         oldList.append(f'#crc_{fig_name}#')
         newList.append(fig_path)
+    
     del crc_data['fig_paths']
     del crc_data['fig_paths_name']
+
     for key in crc_data:
         oldList.append(f'$crc_{key}$')
         newList.append(str(crc_data[key]))
@@ -482,6 +499,8 @@ def handle_crc_docx_template(template_path, new_docx_path, crc_data, score_data)
         oldList.append(f'$crc_{key}$')
         newList.append(str(score_data[key]))
 
+    logger.info(f'oldList: {pformat(oldList)}')
+    logger.info(f'newList: {pformat(newList)}')
 
     template_path = os.path.abspath(template_path)
     new_docx_path = os.path.abspath(new_docx_path)
@@ -491,6 +510,7 @@ def handle_crc_docx_template(template_path, new_docx_path, crc_data, score_data)
     word_obj.close()
 
     return None
+
 
 # ====================================================
 # 测试模块
@@ -510,6 +530,7 @@ def test_handle_crc():
     print(datacal.str_view_data_type(crc_data))
 
     return crc_data, score_data, data_plot
+
 
 def test_handle_crc_docx_template():
 

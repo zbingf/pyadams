@@ -1,5 +1,5 @@
 """
-	RDF路面创建模块
+	RDF格式路面-创建模块
 
 	node 为 对象
 	point 为 列表
@@ -107,6 +107,7 @@ class Node:
 		Node.objs[new_key] = Node.objs.pop(key)
 		self.key = new_key
 
+
 class Triangle:
 	""" 
 		三角网格 
@@ -157,6 +158,7 @@ class Triangle:
 		""" 获取emlemet数据 """
 		self.element = [self.node1.node_id, self.node2.node_id, self.node3.node_id, self.friction]
 		return self.element
+
 
 class RoadElement:
 	""" 
@@ -480,6 +482,7 @@ class RoadElement:
 			points.append(node.get_point())
 
 		return points
+
 	
 class RoadRaisedSin(RoadElement): # sin凸块
 	"""
@@ -539,6 +542,7 @@ class RoadRaisedSin(RoadElement): # sin凸块
 		zs[-1] = z0
 		return xs,ys,zs
 
+
 class RoadFlat(RoadElement): # 平面
 
 	def __init__(self, dic_param):
@@ -573,11 +577,12 @@ class RoadFlat(RoadElement): # 平面
 
 		return xs,ys,zs
 
+
 class RoadBuild:
 	"""
 		创建RDF路面
 	"""
-	def __init__(self,rdf_path=None):
+	def __init__(self, rdf_path=None):
 		"""
 			RoadElement
 
@@ -741,6 +746,7 @@ class RoadBuild:
 
 		return new_points
 
+
 def road_washboards(dic_param): # 搓板路 方向 -x
 	"""	
 		搓板路面生成,完全拼接
@@ -822,6 +828,7 @@ def road_washboards(dic_param): # 搓板路 方向 -x
 
 	return points, elements
 
+
 def circular_ring(dic_param):
 	"""
 		圆环创建
@@ -879,6 +886,7 @@ def circular_ring(dic_param):
 
 	return points,elements
 
+
 def delaunay_element(points, f): # 封闭面生成 element 
 	
 	locations = [point[1:3] for point in points]
@@ -891,6 +899,7 @@ def delaunay_element(points, f): # 封闭面生成 element
 		elements.append(temp_element)
 	
 	return elements
+
 
 def point_circular(radius, n_split, x0=0, y0=0, z0=0, move_id=1, alpha0=pi/4):
 	""" 顺时针生成points数据 """
@@ -912,6 +921,7 @@ def point_circular(radius, n_split, x0=0, y0=0, z0=0, move_id=1, alpha0=pi/4):
 				point[n] = round(point[n],3)
 	# print(points)
 	return points
+
 
 def point_box(length_x, length_y, n_split, x0=0, y0=0, z0=0, move_id=1):
 	"""
@@ -958,6 +968,7 @@ def point_box(length_x, length_y, n_split, x0=0, y0=0, z0=0, move_id=1):
 				point[n] = round(point[n],3)
 
 	return points
+
 
 def join_two_line_to_ring(points1, points2, f):
 	# 输入的数据顺序已经固定

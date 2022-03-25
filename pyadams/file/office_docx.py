@@ -1,10 +1,15 @@
 """
-    
-    基于python-docx
-    生成 docx文档
-    
-    部分基于 win32com 操作
+    office_docx 操作
+        1. 基于python-docx 操作
+        2. 基于win32com 操作
 """
+
+# 标准库
+import time
+import os.path
+import logging
+
+# 调用库
 from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Pt,RGBColor
@@ -16,11 +21,10 @@ from docx.enum.table import WD_CELL_VERTICAL_ALIGNMENT
 from docx.table import _Cell
 from docx.oxml import OxmlElement
 
-import time
-import os.path
-import logging
-# logging.basicConfig(level=logging.INFO)
+# ----------
 logger = logging.getLogger('office_docx')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 # ===========================================================================
@@ -33,7 +37,7 @@ def combind_words_win32(main_path, file_paths):
         调用 win32com 模块
     """
 
-    logger.info('combind_words_win32 win32com调用')
+    if is_debug: logger.info('combind_words_win32 win32com调用')
 
     main_path = os.path.abspath(main_path)
 
@@ -65,7 +69,7 @@ def doc2pdf(doc_path, pdf_path=None):
     """
         调用 win32com 模块
     """
-    logger.info('doc2pdf win32com调用')
+    if is_debug: logger.info('doc2pdf win32com调用')
 
     doc_path = os.path.abspath(doc_path)
 
@@ -100,7 +104,7 @@ class WordEdit:
     def __init__(self,word_path):
         
         import win32com.client
-        logger.info('WordEdit win32com调用')
+        if is_debug: logger.info('WordEdit win32com调用')
 
         word_path = os.path.abspath(word_path)
 
@@ -138,12 +142,12 @@ class WordEdit:
         else:
             self.document.SaveAs2(self.file_path,12,False,"",True,"",False,False,False,False,False,15)
 
-        logger.info(f'保存word:{self.file_path}')
+        if is_debug: logger.info(f'保存word:{self.file_path}')
 
     def close(self):
         """ 关闭 word"""
         self.document.Close()
-        logger.info(f'关闭word:{self.file_path}')
+        if is_debug: logger.info(f'关闭word:{self.file_path}')
 
     def replace_str(self, oldStr, newStr):
         """
@@ -155,7 +159,7 @@ class WordEdit:
         selection.Find.Replacement.ClearFormatting()
         selection.Find.Execute(oldStr,False,False,False,False,False,True,1,True,newStr,2)
 
-        logger.info(f'文字替换:{oldStr} --> {newStr}')
+        if is_debug: logger.info(f'文字替换:{oldStr} --> {newStr}')
 
     def add_picture(self, oldStr, fig_path):
         """
@@ -174,7 +178,7 @@ class WordEdit:
             else:
                 break
 
-        logger.info(f'图片替换:{oldStr} --> {fig_path}')
+        if is_debug: logger.info(f'图片替换:{oldStr} --> {fig_path}')
 
 
 
@@ -253,7 +257,7 @@ class DataDocx:
 
     def __init__(self, docx_path):
         
-        logger.info('DataDocx python-docx调用')
+        if is_debug: logger.info('DataDocx python-docx调用')
         self.document = Document()
         self.docx_path = docx_path
         self.set_page_margin()
@@ -493,6 +497,7 @@ def test_DataDocx():
 if __name__ == '__main__':
 
     pass
+    logging.basicConfig(level=logging.INFO)
 
     # docx_path = r'..\tests\file_office_docx\demo4.docx'
     # # docx_path = os.path.abspath(docx_path)

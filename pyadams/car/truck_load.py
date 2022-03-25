@@ -51,7 +51,7 @@ import xlsxwriter
 
 # 自建库
 import pysnooper
-from pyadams.call import threadingrun, cmdlink
+from pyadams.call import threadingrun, cmd_link
 from pyadams.file import result
 
 
@@ -63,8 +63,8 @@ is_debug = True
 
 # ----------
 DataModel = result.DataModel
-cmd_file_send = cmdlink.cmd_file_send
-cmd_send = cmdlink.cmd_send
+cmd_file_send = cmd_link.cmd_file_send
+cmd_send = cmd_link.cmd_send
 
 
 # =================================================

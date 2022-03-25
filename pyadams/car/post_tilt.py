@@ -5,19 +5,22 @@
         adams/car result文件后处理
 """
 
-# ===================================
+# 标准库
+import math, os
+import time
+import copy
+import pprint
+import os.path
+
+# 调库库
+import matplotlib.pyplot as plt
+
+# 自建库
 from pyadams import datacal
 from pyadams.file import result
 from pyadams.file import file_edit, office_docx
 DataModel = result.DataModel
 
-# ===================================
-import math, os
-import time
-import copy
-import pprint
-import matplotlib.pyplot as plt
-import os.path
 
 # ===================================
 LEFT = 'left'               # 左翻
@@ -255,15 +258,30 @@ def cal_tilt(res_path, target_angles): # 主计算函数
     res_path = os.path.abspath(res_path)
 
     table_angle, left_res, right_res = get_tilt_result_data(res_path)
+
     tilt_direction, ourter_res, inner_res = get_tilt_side(table_angle, left_res, right_res)
+    
     locs = get_table_angle_loc(table_angle, target_angles)
+    
     target_keys, target_res = get_target_res(table_angle, ourter_res, locs)
 
     mass_full = cal_estimate_vehicle_mass(inner_res, ourter_res)
+
     ourter_angle = get_table_angle(table_angle, ourter_res)
 
+    
     for req, comp, line in zip(ourter_res['req'], ourter_res['comp'], ourter_res['data']):
         plt.plot(table_angle, line)
+
+    # 外侧总合力
+    line_sum = []
+    for n1 in range(len(ourter_res['data'][0])):
+        v = 0
+        for n2 in range(len(ourter_res['data'])):
+            v += ourter_res['data'][n2][n1]
+        line_sum.append(v)
+    plt.plot(table_angle, line_sum)
+
 
     if tilt_direction==LEFT:
         plt.title('左翻')
@@ -271,7 +289,7 @@ def cal_tilt(res_path, target_angles): # 主计算函数
         plt.title('右翻')
 
 
-    plt.legend(ourter_res['comp'])
+    plt.legend(ourter_res['comp']+['outer_sum'])
     plt.xlabel('侧翻角度 deg')
     plt.ylabel('外出轮胎荷载 kg')
     fig_path = f'{res_path}_{tilt_direction}.png'
@@ -330,16 +348,16 @@ def pdf_ourter_angle(obj, output_data):
     obj.add_paragraph('\n'.join(strs))
 
 
-# pdf-指定角度对应外侧轮荷
 def pdf_target_angle(obj, output_data):
     """
+        pdf-指定角度对应外侧轮荷
         target_keys : [ float.. ],
         target_res : {14.50: { normal_front :  float ,
-                                        normal_rear :  float ,
-                                        ourter_full :  float },
+                               normal_rear :  float ,
+                               ourter_full :  float },
                     28.34: { normal_front :  float ,
-                                         normal_rear :  float ,
-                                         ourter_full :  float }},
+                             normal_rear :  float ,
+                             ourter_full :  float }},
     """
     target_res  = output_data['target_res']
     target_keys = output_data['target_keys']

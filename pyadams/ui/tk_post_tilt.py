@@ -4,18 +4,22 @@
     合力计算
 """
 
-from pyadams.ui import tkui
-from pyadams.car import post_tilt
-from pyadams import datacal
-
-TkUi = tkui.TkUi
-
+# 标准库
 import tkinter as tk
 import logging
 import os.path
-PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
+
+
+# 自建库
+from pyadams.ui import tkui
+from pyadams.car import post_tilt
+from pyadams import datacal
+TkUi = tkui.TkUi
+
+
+logger = logging.getLogger('tk_post_titlt')
+is_debug = True
+
 
 class PostTiltUi(TkUi):
 

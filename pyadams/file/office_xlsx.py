@@ -7,19 +7,24 @@
 
 """
 
+# 标准库
+import os.path
+import csv
+import logging
+import collections
+
+
+# 调用库
 # WordEdit.py
 import win32com
 from win32com.client import Dispatch,constants
-import collections
-import os
-import csv
 import xlsxwriter
 
-import logging
-import os.path
-PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
+
+# ----------
+logger = logging.getLogger('office_xlsx')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 class ExcelEdit:

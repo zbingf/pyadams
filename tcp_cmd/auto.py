@@ -8,6 +8,7 @@ import tkinter.messagebox
 import logging
 
 # 自建库
+import tcp_cmd_fun as tcmdf
 import tcp_car
 import tcp_car_brake
 import tcp_car_static_only
@@ -159,7 +160,11 @@ def auto_brake(record_state=1, params_static_replace=None):
     """
     if is_debug: logging.debug("Call auto_brake")
     word_path = AUTO_SET['auto_brake']['word_path']
-    new_word_path = set_new_path(AUTO_SET['auto_brake']['new_word_path'])
+    new_word_path = AUTO_SET['auto_brake']['new_word_path']
+    if '#model_name#' in new_word_path:
+        model_name = tcmdf.get_current_model()
+        new_word_path = new_word_path.replace('#model_name#', model_name)
+    new_word_path = set_new_path(new_word_path)
 
     obj = AutoCur()
     if params_static_replace==None:
@@ -205,24 +210,30 @@ def auto_spring_preload(record_state=1, **params_replace):
 # cov = coverage.coverage()
 # cov.start()
 
-auto_brake(1, {'sim_type':'normal'})
-auto_static_only(1, sim_type='normal')
-auto_spring_preload(1, sim_type='normal')
 
-# cov.stop()
-# cov.save()
+if __name__=='__main__':
+    auto_brake(1)
+    auto_static_only(1)
+    auto_spring_preload(1)
 
-# import sys
-# calc_type = sys.argv[1].strip().lower()
-# params = sys.argv[2].strip().lower()
+    # auto_brake(1, {'sim_type':'normal'})
+    # auto_static_only(1, sim_type='normal')
+    # auto_spring_preload(1, sim_type='normal')
 
-# if calc_type == 'auto_brake':
-#     auto_brake(1, {'sim_type':params})
+    # cov.stop()
+    # cov.save()
 
-# if calc_type == 'auto_static_only':
-#     auto_static_only(1, sim_type=params)
+    # import sys
+    # calc_type = sys.argv[1].strip().lower()
+    # params = sys.argv[2].strip().lower()
 
-# if calc_type == 'auto_spring_preload':
-#     auto_spring_preload(1, sim_type=params)
+    # if calc_type == 'auto_brake':
+    #     auto_brake(1, {'sim_type':params})
 
-logging.shutdown()
+    # if calc_type == 'auto_static_only':
+    #     auto_static_only(1, sim_type=params)
+
+    # if calc_type == 'auto_spring_preload':
+    #     auto_spring_preload(1, sim_type=params)
+
+    # logging.shutdown()

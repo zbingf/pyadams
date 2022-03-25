@@ -42,6 +42,7 @@ def file_remove_pt(path, prefix=None, file_type=None):
         # print(target)
     return True
 
+
 # 删除文件夹内指定文件
 def file_remove(path,prefix,suffix=None): 
     '''
@@ -69,6 +70,7 @@ def file_remove(path,prefix,suffix=None):
         # print(target)
     return True
 
+
 # 删除指定文件
 def del_file(filepath): 
     try:
@@ -77,10 +79,12 @@ def del_file(filepath):
     except:
         return False
 
+
 # 判断文件是否存在
 def is_file_exist(filepath):
     # 判断文件是否存在
     return os.path.exists(filepath)
+
 
 # 重命名 文件名，避免重名
 def rename_filepath(filepath):
@@ -101,6 +105,7 @@ def rename_filepath(filepath):
     else:
         return filepath
 
+
 # 重名文件夹名称，避免重名
 def rename_filedir(filedir):
     # 重命名 文件夹名
@@ -113,6 +118,7 @@ def rename_filedir(filedir):
             break
     return new_filedir,n
 
+
 # 创建文件夹
 def create_dir(filedir):
     # 创建文件夹
@@ -122,6 +128,7 @@ def create_dir(filedir):
         logging.warning(f'文件已存在,不进行创建:{filedir}')
         pass
     return None
+
 
 # 获取文件大小
 def get_file_size(file_path, size_type='mb'):
@@ -163,6 +170,7 @@ def file_search(path, prefix, suffix):
     return filepaths
 
 
+# 
 def file_search_glob(filedir, filename, n_subpath=5, isOneFile=True):
     """
         文件存放目录

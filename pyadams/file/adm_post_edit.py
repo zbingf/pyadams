@@ -1,5 +1,4 @@
 """
-	
 	ADAMS / adm 文件
 	类型:
 		adams/car ride 模块-四立柱台架加载

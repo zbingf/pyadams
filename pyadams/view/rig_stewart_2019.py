@@ -184,8 +184,8 @@ if __name__ == "__main__":
 		print(__file__)
 		cmd_str = 'file python read file_name="{}"'.format(__file__)
 		sys.path.append(r'..')
-		import call.tcplink as tcplink
-		tcplink.cmd_send(cmd_str)
+		import call.tcp_link as tcp_link
+		tcp_link.cmd_send(cmd_str)
 		print(locals())
 
 	else:

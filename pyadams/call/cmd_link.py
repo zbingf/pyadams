@@ -7,6 +7,8 @@
     
 
 '''
+
+# 标准库
 import os
 import re
 import sys
@@ -14,12 +16,15 @@ import subprocess
 import psutil
 import glob
 import time
-
-import os.path
 import logging
+
+
 PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
+
+# ----------
+logger = logging.getLogger('cmd_link')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 ADAMS_VERSION = 'adams2017_2'
@@ -165,7 +170,7 @@ def is_sim_success(res_path, sim_minute):
         time.sleep(1)
         n += 1
         if n > sim_minute*60:
-            logger.warning("进程计算超时, 停止计算")
+            if is_debug: logger.warning("进程计算超时, 停止计算")
             break
     return isSuccess
 
@@ -191,22 +196,22 @@ def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE, true_res_path=No
     proc = subprocess.Popen(bat_path, cwd=run_dir)
 
     main_pid = proc.pid
-    logger.info(f"bat_path: {bat_path} ;\n 运行路径: {run_dir} ;\n main_pid: {main_pid}")
+    if is_debug: logger.info(f"bat_path: {bat_path} ;\n 运行路径: {run_dir} ;\n main_pid: {main_pid}")
 
     try:
         # 判定是否运行完毕，并结束进程
         if is_sim_success(res_path, simlimit):
 
             # 'msg' 信息到 finish即结束
-            logger.info(f'“msg”信息检测到 finished 判定结束, 关闭子程序')
-            logger.info(f'ResPath : {res_path}')
+            if is_debug: logger.info(f'“msg”信息检测到 finished 判定结束, 关闭子程序')
+            if is_debug: logger.info(f'ResPath : {res_path}')
 
             try:
                 # 防止计算过快
                 p = psutil.Process(main_pid)
                 p_childrens = p.children() 
-                logger.info(f'计算程序: {p}')
-                logger.info(f'计算子程序: {p_childrens}')
+                if is_debug: logger.info(f'计算程序: {p}')
+                if is_debug: logger.info(f'计算子程序: {p_childrens}')
 
                 # 子进程关闭
                 for p_chr in p_childrens:
@@ -215,23 +220,23 @@ def call_bat_sim(bat_path, res_path, simlimit=SIM_LIMIT_MINUTE, true_res_path=No
 
                 # 主进程关闭
                 proc.kill()
-                logger.info(f'进程（id: {main_pid}）及子程序结束')
+                if is_debug: logger.info(f'进程（id: {main_pid}）及子程序结束')
 
                 # 2021.12.29新增 
                 # 2017.1 ADAMS view 程序
                 aview_ids = search_target_log_ana_id(true_res_path)
                 for aview_id in aview_ids:
                     kill_pid(aview_id)
-                    logger.info(f'进程（aview_id: {aview_id}）结束')
+                    if is_debug: logger.info(f'进程（aview_id: {aview_id}）结束')
 
             except:
-                logger.info(f'进程本身已经终止,返回res_path: {res_path}')
+                if is_debug: logger.info(f'进程本身已经终止,返回res_path: {res_path}')
                 return res_path
 
         return res_path
     except:
         # print('error in kiil_pid')
-        logger.warning(f'仿真进程（id{main_pid}）有问题,res_path返回False')
+        if is_debug: logger.warning(f'仿真进程（id{main_pid}）有问题,res_path返回False')
     
     return False
 
@@ -278,7 +283,7 @@ def cmd_file_send(cmd_path=None, mode='car',
 
             return True
         else:
-            logger.error(f"文件不存在: {cmd_path}")
+            if is_debug: logger.error(f"文件不存在: {cmd_path}")
             return False
 
 

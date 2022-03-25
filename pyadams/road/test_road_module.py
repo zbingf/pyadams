@@ -1,5 +1,5 @@
 """
-	紧用于测试
+	仅用于测试
 """
 
 from scipy.spatial import Delaunay

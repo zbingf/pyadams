@@ -1,17 +1,26 @@
-from pyadams import datacal
-from pyadams.datacal import plot, tscal
-from pyadams.file import file_edit, office_docx
+"""
+    后处理文件
+        + 解析
+        + 处理
 
+"""
+
+# 标准库
 import re, math, sys, os, struct, abc, copy, time
 import logging, os.path
 import pprint
 
-# ==============================
-# logging日志配置
-PY_FILE_NAME = os.path.basename(__file__).replace('.py', '')
-LOG_PATH = PY_FILE_NAME+'.log'
-logger = logging.getLogger(PY_FILE_NAME)
-# ==============================
+
+# 自建库
+from pyadams import datacal
+from pyadams.datacal import plot, tscal
+from pyadams.file import file_edit, office_docx
+
+
+# ----------
+logger = logging.getLogger('result')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 # ==============================
@@ -29,8 +38,10 @@ cal_rainflow_pdi= tscal.cal_rainflow_pdi
 
 # ==============================
 
-class ReusltData(abc.ABC):
-
+class BaseResultFile(abc.ABC):
+    """
+        后处理数据读取
+    """
     def __init__(self): 
         self.name            = None
         self.file_path       = None
@@ -133,8 +144,10 @@ class ReusltData(abc.ABC):
         return None
 
 
-class ResFile(ReusltData):
-
+class ResFile(BaseResultFile):
+    """
+        res 文件解析
+    """
     def __init__(self, file_path, name=None): 
         super().__init__()
         self.file_path = file_path
@@ -148,7 +161,7 @@ class ResFile(ReusltData):
 
         if not isReload:
             self._set_request_data()
-            logger.warning(f'ResFile: {self.name} do not reload!!!')
+            if is_debug: logger.warning(f'ResFile: {self.name} do not reload!!!')
             return None
 
         fileid = open(file_path,'r')
@@ -258,8 +271,8 @@ class ResFile(ReusltData):
             try:
                 dataId.append(requestId[keyName])
             except:
-                # logger.warning('reqs.comps error: {}\n'.format(keyName))
-                logger.error(f'{key_name} not in requestId')
+                # if is_debug: logger.warning('reqs.comps error: {}\n'.format(keyName))
+                if is_debug: logger.error(f'{key_name} not in requestId')
                 isAllRead = False
 
         assert isAllRead , 'ResFile读取失败,未完全完成读取,终止'
@@ -306,7 +319,7 @@ class ResFile(ReusltData):
         for req, comp in zip(self.reqs, self.comps):
             key_name = str_lower_strip(req)+'.'+str_lower_strip(comp)
             if key_name not in requestId:
-                logger.error(f'{key_name} not in requestId')
+                if is_debug: logger.error(f'{key_name} not in requestId')
             id_list.append(requestId[key_name])
 
         while True:
@@ -380,8 +393,10 @@ class ResFile(ReusltData):
         return requestId
 
 
-class ReqFile(ReusltData):
-
+class ReqFile(BaseResultFile):
+    """
+        req 文件解析
+    """
     def __init__(self, file_path, name=None):
         super().__init__()
         self.file_path = file_path
@@ -396,7 +411,7 @@ class ReqFile(ReusltData):
         
         if not isReload:
             self._set_request_data()
-            logger.warning(f'ReqFile: {self.name} do not reload!!!')
+            if is_debug: logger.warning(f'ReqFile: {self.name} do not reload!!!')
             return None
 
         f = open(file_path,'r')
@@ -518,8 +533,10 @@ class ReqFile(ReusltData):
         return None
 
 
-class NumDataFile(ReusltData):
-
+class NumDataFile(BaseResultFile):
+    """
+        NumData 文件解析
+    """
     def __init__(self, file_path, name=None): 
         super().__init__()
         self.file_path = file_path
@@ -577,8 +594,10 @@ class NumDataFile(ReusltData):
     def set_reqs_comps(self, reqs, comps): return None
 
 
-class RpcFile(ReusltData):
-
+class RpcFile(BaseResultFile):
+    """
+        rpc 文件解析
+    """
     def __init__(self, file_path, name=None): 
         super().__init__()
         self.file_path = file_path
@@ -686,8 +705,10 @@ class RpcFile(ReusltData):
     def set_reqs_comps(self, reqs, comps): return None
 
 
-class CsvFile(ReusltData):
-
+class CsvFile(BaseResultFile):
+    """
+        csv 文件解析
+    """
     def __init__(self, file_path, name=None): 
         super().__init__()
         
@@ -764,7 +785,9 @@ class CsvFile(ReusltData):
 # ==============================
 
 class DataModel:
-
+    """
+        后处理数据解析管理
+    """
     model_names = []
     models      = {}
 
@@ -782,7 +805,7 @@ class DataModel:
             self.objs       = DataModel.models[name].objs
             self.file_types = DataModel.models[name].file_types
             self.others     = DataModel.models[name].others
-            logger.warning(f'DataModel["{name}"] is exists, using old data.')
+            if is_debug: logger.warning(f'DataModel["{name}"] is exists, using old data.')
 
     def __getitem__(self, k): return self.objs[k]
 
@@ -790,7 +813,8 @@ class DataModel:
 
         assert os.path.exists(file_path)
         # assert not name in self.objs
-        if name in self.objs: logger.warning(f'DataModel.new_file: {name} is exists, cover')
+        if name in self.objs: 
+            if is_debug: logger.warning(f'DataModel.new_file: {name} is exists, cover')
 
         # ==============================
         file_types = self.file_types
@@ -837,6 +861,9 @@ class DataModel:
     #     self.objs[key] = 
 
 
+# ==============================
+# ==============================
+
 class DataModelPlotAndPdf(abc.ABC):
 
     def __init__(self):
@@ -870,8 +897,8 @@ class DataModelPlotAndPdf(abc.ABC):
         pdf_path  = self.pdf_paths[result_key]
         os.remove(pdf_path)
         os.remove(docx_path)
-        logger.info(f'remove file: {pdf_path}')
-        logger.info(f'remove file: {docx_path}')
+        if is_debug: logger.info(f'remove file: {pdf_path}')
+        if is_debug: logger.info(f'remove file: {docx_path}')
 
         return None
 
@@ -880,7 +907,7 @@ class DataModelPlotAndPdf(abc.ABC):
         paths = self.recursive_figure_files(self.fig_paths[result_key], [])
         for path in paths:
             os.remove(os.path.abspath(path))
-            logger.info(f'remove file: {path}')
+            if is_debug: logger.info(f'remove file: {path}')
         return None
 
     @staticmethod
@@ -899,11 +926,13 @@ class DataModelPlotAndPdf(abc.ABC):
 
 
 class DataModelCompare(DataModelPlotAndPdf):
-
+    """
+        数据对比，生成PDF
+    """
     def __init__(self, data_obj=None):
         super().__init__()
-        self.obj            = data_obj
-        self.result_compare = {}
+        self.obj            = data_obj # DataModel 实例
+        self.result_compare = {}    
 
     def compare(self, name_u, name_l):
 
@@ -1677,7 +1706,9 @@ class DataModelCompare(DataModelPlotAndPdf):
 
 
 class DataModelPlot(DataModelPlotAndPdf):
-
+    """
+        数据图-pdf
+    """
     def __init__(self, data_obj=None):
         super().__init__()
         self.obj       = data_obj
@@ -2041,7 +2072,9 @@ class DataModelPlot(DataModelPlotAndPdf):
 
 
 class DataModelScatter(DataModelPlotAndPdf):
-
+    """
+        数据散点图-pdf
+    """
     def __init__(self, data_obj=None):
         super().__init__()
         self.obj       = data_obj
@@ -2285,6 +2318,7 @@ def test_CsvFile():
 
     return None
 
+
 def test_ResFile():
 
     res_path = r'..\tests\file_result\break_brake.res'
@@ -2312,6 +2346,7 @@ def test_ResFile():
 
     return None
 
+
 def test_NumDataFile():
 
     file_path = r'..\tests\file_result\num_brake_brake.txt'
@@ -2327,6 +2362,7 @@ def test_NumDataFile():
     print(titles)
 
     return None
+
 
 def test_RspFile():
 
@@ -2349,6 +2385,7 @@ def test_RspFile():
     assert round(samplerate, 3) == round(10.0, 3)
 
     return None
+
 
 def test_ReqFile():
 
@@ -2380,6 +2417,7 @@ def test_ReqFile():
 
     return None
 
+
 def test_DataModelCompare():
 
     params = {
@@ -2404,6 +2442,7 @@ def test_DataModelCompare():
     dmc_obj.remove_result_files(dmc_obj.set_key('res', 'res'))
 
     return None
+
 
 def test_DataModelCompare_2():
 
@@ -2430,6 +2469,7 @@ def test_DataModelCompare_2():
     dmc_obj.remove_result_files(dmc_obj.set_key('res', 'res'))
 
     return None
+
 
 def test_DataModelCompare_3():
 
@@ -2483,6 +2523,7 @@ def test_DataModelPlot():
 
     return None
 
+
 def test_DataModelPlot_2():
 
     params = {
@@ -2514,6 +2555,7 @@ def test_DataModelPlot_2():
     dmp_obj.remove_result_files(dmp_obj.set_key('res'))
 
     return None
+
 
 def test_DataModelScatter():
 

@@ -10,7 +10,7 @@ import multiprocessing
 import os
 import time
 
-from pyadams.call import cmdlink
+from pyadams.call import cmd_link
 
 
 class TimeCal: # 计时用
@@ -151,9 +151,9 @@ def multi_cmd_run(cmds,cmdset=None,run_path=None,limit_n=4):
 			os.mkdir(simpath)
 		os.chdir(simpath)
 		if cmdset==None:
-			pobj.process_run(target=cmdlink.cmd_send,args=(cmd,))
+			pobj.process_run(target=cmd_link.cmd_send,args=(cmd,))
 		else:
-			pobj.process_run(target=cmdlink.cmd_send,args=(cmd,cmdset['cmd_path'],
+			pobj.process_run(target=cmd_link.cmd_send,args=(cmd,cmdset['cmd_path'],
 				cmdset['mode'],cmdset['savefile'],cmdset['res_path'],cmdset['minutes'],))
 		os.chdir('..')
 		pobj.set_limit_running(limit_n)
