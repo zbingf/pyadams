@@ -11,45 +11,44 @@ from pprint import pprint, pformat
 import logging
 
 # 自建库
-import tcp_car
+# //
 
 # ----------
-logger = logging.getLogger('post_static_only')
+logger = logging.getLogger('post_car_static')
 logger.setLevel(logging.DEBUG)
 is_debug = True
 
-
 get_cur_time = lambda: time.strftime('%Y:%m:%d-%H:%M', time.localtime(time.time()))
 USER_NAME = getpass.getuser()
-RECORD_PATH = tcp_car.json_read(tcp_car.ACAR_FULL_STATIC_PATH)['record_path']
 
 
-# result:
-# {'Axles': {'TR_Front_Tires.til_wheel': 1,
-#            'TR_Front_Tires.tir_wheel': 1,
-#            'TR_Rear_Tires.til_wheel': 2,
-#            'TR_Rear_Tires.tir_wheel': 2},
-#  'I_center': [298688841.89, 1162890925.9, 1341023809.23],
-#  'Ls': {'L-1-2': 2560.0},
-#  'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,
-#         'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
-#  'axle_num': 2,
-#  'm_center': [1482.05, -1.42, 415.45],
-#  'mass': 1527.68,
-#  'model_name': 'MDI_Demo_Vehicle',
-#  'tire_forces': {'TR_Front_Tires.til_wheel': 3159.3,
-#                  'TR_Front_Tires.tir_wheel': 3145.1,
-#                  'TR_Rear_Tires.til_wheel': 4345.73,
-#                  'TR_Rear_Tires.tir_wheel': 4331.3},
-#  'tire_locs': {'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
-#                'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
-#                'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
-#                'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]},
-#  'tire_names': ['TR_Front_Tires.til_wheel',
-#                 'TR_Front_Tires.tir_wheel',
-#                 'TR_Rear_Tires.til_wheel',
-#                 'TR_Rear_Tires.tir_wheel']}
-
+""" result 格式
+    result:
+    {'Axles': {'TR_Front_Tires.til_wheel': 1,
+               'TR_Front_Tires.tir_wheel': 1,
+               'TR_Rear_Tires.til_wheel': 2,
+               'TR_Rear_Tires.tir_wheel': 2},
+     'I_center': [298688841.89, 1162890925.9, 1341023809.23],
+     'Ls': {'L-1-2': 2560.0},
+     'Ws': {'W-1-TR_Front_Tires.tir_wheel': 1520.0,
+            'W-2-TR_Rear_Tires.tir_wheel': 1594.0},
+     'axle_num': 2,
+     'm_center': [1482.05, -1.42, 415.45],
+     'mass': 1527.68,
+     'model_name': 'MDI_Demo_Vehicle',
+     'tire_forces': {'TR_Front_Tires.til_wheel': 3159.3,
+                     'TR_Front_Tires.tir_wheel': 3145.1,
+                     'TR_Rear_Tires.til_wheel': 4345.73,
+                     'TR_Rear_Tires.tir_wheel': 4331.3},
+     'tire_locs': {'TR_Front_Tires.til_wheel': [267.0, -760.0, 330.0],
+                   'TR_Front_Tires.tir_wheel': [267.0, 760.0, 330.0],
+                   'TR_Rear_Tires.til_wheel': [2827.0, -797.0, 350.0],
+                   'TR_Rear_Tires.tir_wheel': [2827.0, 797.0, 350.0]},
+     'tire_names': ['TR_Front_Tires.til_wheel',
+                    'TR_Front_Tires.tir_wheel',
+                    'TR_Rear_Tires.til_wheel',
+                    'TR_Rear_Tires.tir_wheel']}
+"""
 
 len_max_dict_key = lambda dict1: max([len(key) for key in dict1])
 str_list_e1 = lambda list1, prelist, istr='\n': istr.join([f'{p} : {v:0.3e} ' for p,v in zip(prelist, list1)])
@@ -143,11 +142,15 @@ POST_STATIC = {
 }
 
 
-# word 文档输出
-def post_static_only(result):
-    # old_list = 
-    # ['$模型名称$', '$整车质量$', '$整车质心$', '$整车绕质心转动惯量$', 
-    # '$轴距$', '$轮距$', '$轴数$', '$轮胎垂向力$', '$轮胎中心坐标$']
+
+def post_car_static(result):
+    """
+        word 文档 需变更数据输出
+        old_list = 
+            ['$模型名称$', '$整车质量$', '$整车质心$', '$整车绕质心转动惯量$', 
+            '$轴距$', '$轮距$', '$轴数$', '$轮胎垂向力$', '$轮胎中心坐标$']
+        new_list = [...]
+    """
 
     old_list, new_list = [], []
     for key in POST_STATIC:
@@ -175,7 +178,14 @@ def post_static_only(result):
     return old_list, new_list
 
 
+
+# ---------------------------
+# record
+
 def _csv_str_Ws(result):
+    """
+        轮距数据处理
+    """
     data = result['Ws']
     # print(data)
     new_Ws = {}
@@ -193,7 +203,7 @@ def _csv_str_Ws(result):
     return ';'.join(lines)
 
 
-def csv_post_static_only(result):
+def csv_post_static(result):
     old_list, new_list = [], []
     for key in POST_STATIC:
         if key == 'model_name':
@@ -241,63 +251,65 @@ def csv_post_static_only(result):
     return old_line, new_line
 
 
-def csv_post_static_only_start(csv_path, result):
+def csv_post_static_start(csv_path, result):
 
-    r_strs = csv_post_static_only(result)
+    r_strs = csv_post_static(result)
     # print(r_strs)
     with open(csv_path, 'w') as f:
         f.write('\n'.join(r_strs))
         f.write('\n')
 
 
-def csv_post_static_only_append(csv_path, result):
-    r_strs = csv_post_static_only(result)
+def csv_post_static_append(csv_path, result):
+    r_strs = csv_post_static(result)
     with open(csv_path, 'a') as f:
         f.write(r_strs[-1])
         f.write('\n')
 
 
-def csv_post_static_only_print(result):
-
-    if os.path.exists(RECORD_PATH):
-        csv_post_static_only_append(RECORD_PATH, result)
-        if is_debug: logger.debug("append")
-        # print('append')
+def csv_post_static_print(path, result):
+    """
+        static 仿真结果数据记录到csv文件
+    """
+    if os.path.exists(path):
+        csv_post_static_append(path, result)
+        if is_debug: logger.debug("record vehicle data, append")
     else:
-        csv_post_static_only_start(RECORD_PATH, result)
-        if is_debug: logger.debug("new write")
-        # print('new write')
+        csv_post_static_start(path, result)
+        if is_debug: logger.debug("record vehicle data, new file write")
 
 
 
 # ------------------------------------------------
 # --------------------TEST------------------------
 
-def test_cur_static_only_word():
+def test_cur_static_word():
     import office_docx
     WordEdit = office_docx.WordEdit
 
     # word文档编辑 测试
-    word_path = r'post_static_only.docx'
-    new_word_path = r'new_post_static_only.docx'
+    word_path = r'post_car_static.docx'
+    new_word_path = r'new_post_static.docx'
 
-    # result = tcp_car.main_cur_static_only()
+    # result = tcp_car.main_cur_static()
     # pprint(result)
-    # old_list, new_list = post_static_only(result)
+    # old_list, new_list = post_car_static(result)
 
     # word_obj = WordEdit(word_path)
     # word_obj.replace_edit(old_list, new_list)
     # word_obj.save(new_word_path)
     # word_obj.close()
 
-def test_cur_static_only_csv():
-
-    # csv_path = 'post_static_only.csv'
-    csv_post_static_only_print(result)
+def test_cur_static_csv():
+    pass
+    # import tcp_car
+    # RECORD_PATH = tcp_car.json_read(tcp_car.ACAR_FULL_STATIC_PATH)['record_path']
+    # csv_path = 'post_car_static.csv'
+    csv_post_static_print(RECORD_PATH, result)
 
 
 
 
 if __name__=='__main__':
     pass
-    test_cur_static_only_csv()
+    test_cur_static_csv()

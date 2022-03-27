@@ -15,7 +15,6 @@ import tcp_cmd_fun as tcmdf
 
 # ----------
 req_filter = json_read(ACAR_REQUEST_PATH)
-
 round_list = lambda list1, n: [round(v, n) for v in list1]
 
 

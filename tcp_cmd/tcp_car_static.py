@@ -13,7 +13,7 @@ import tcp_cmd_fun as tcmdf
 
 
 # ----------
-logger = logging.getLogger('tcp_car_static_only')
+logger = logging.getLogger('tcp_car_static')
 logger.setLevel(logging.DEBUG)
 is_debug = True
 
@@ -93,7 +93,6 @@ def parse_tire_locs(tire_locs):
 
     return output
     
-
 
 def sim_static_only(params, res_path=None):
     # 计算-静平衡计算
@@ -190,7 +189,7 @@ def sim_static_only(params, res_path=None):
     return vehicle_data
     
 
-def main_cur_static_only(res_path=None, **params_replace):
+def main_cur_static(res_path=None, **params_replace):
     """
         仅静态计算
         res_path 若为None, 则进行仿真计算; 否则直接调用res_path数据计算
@@ -202,12 +201,12 @@ def main_cur_static_only(res_path=None, **params_replace):
     
     vehicle_data = round_data_dict(sim_static_only(params, res_path), {}, 2) # 保留2位数据
     # pprint(params)
-    # 
+
     return vehicle_data
 
 
 
 if __name__=='__main__':
     pass
-    vehicle_data = main_cur_static_only()
+    vehicle_data = main_cur_static()
     pprint(vehicle_data)

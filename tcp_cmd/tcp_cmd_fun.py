@@ -9,11 +9,19 @@ import copy
 import re
 from pprint import pprint
 import time
+import logging
+
 
 # 自建库
 import tcp_link
 cmd_send = tcp_link.cmds_run # 直接运行,未处理的多个命令行
 query_send = tcp_link.cmd_send
+
+
+# ----------
+logger = logging.getLogger('auto')
+logger.setLevel(logging.DEBUG)
+is_debug = True
 
 
 # ------------------------------------------------
@@ -103,6 +111,17 @@ acar toolkit database default writable &
 def set_default_cdb(cdb_name):
     """ 设置默认数据库 """
     new_cmd = _cmd_replace(CMD_DEFAULT_CDB, cdb_name=cdb_name)
+    cmd_send(new_cmd)
+    return None
+
+
+CMD_CURRENT_MODEL = """
+model display model_name=.#model_name# fit_to_view=yes
+"""
+
+def set_current_model(model_name):
+    """切换当前模型"""
+    new_cmd = _cmd_replace(CMD_CURRENT_MODEL, model_name=model_name)
     cmd_send(new_cmd)
     return None
 
@@ -513,6 +532,54 @@ def get_request_data_one(req):
 
 # ------------------------------------------------
 # ------------------------------------------------
+# --------------------判断及设置-------------------
+# ------------------------------------------------
+# ------------------------------------------------
+
+def is_current_model_event_class(event_class='__MDI_SDI_TESTRIG'):
+    """
+        当前模型界面判断 event_class类型
+        is_main_model : 是否为主模型
+        is_event_class: 是否为目标台架类型
+        cur_model_name: 当前模型名称
+        model_name    : 主模型名称
+    """
+    # 前置判断
+    model_name = get_current_model()
+    cur_model_name = model_name
+    is_main_model, is_event_class = True, True
+
+    if is_debug: logger.debug(f"model_name : {model_name}")
+    if '.' in model_name: is_main_model = False
+    model_name = model_name.split('.')[0]
+
+    cur_event_class = get_variable(f'.{model_name}.event_class').upper()
+    if is_debug: logger.debug(f"event_class : {cur_event_class}")
+    if event_class != cur_event_class: is_event_class = False
+
+    return is_main_model, is_event_class, cur_model_name, model_name
+
+
+def set_current_asy_with_event_class(event_class='__MDI_SDI_TESTRIG'):
+    """
+        Car模块 设置当前asy装配模型
+            + 指定 event_class 台架类型
+    """
+    is_main_model, is_event_class, cur_model_name, model_name = is_current_model_event_class(event_class)
+    
+    if not is_event_class:
+        if is_debug: logger.error(f"current model not asy SDI : {model_name}")
+        return False
+
+    if not is_main_model and is_event_class:
+        if is_debug: logger.info(f"change current model {cur_model_name} to {model_name}")
+        set_current_model(model_name)
+
+    return True
+
+
+# ------------------------------------------------
+# ------------------------------------------------
 # --------------------QUERY-MODEL-----------------
 # ------------------------------------------------
 # ------------------------------------------------
@@ -689,7 +756,6 @@ def get_model_sus_tire_names(model_name):
 def get_model_sus_tire_data(model_name):
     """ 获取model_name(开头无'.')里所有的tire数据 """
     return _get_model_obj_data(model_name, get_model_sus_tire_names, get_tire_data)
-
 
 
 

@@ -14,12 +14,13 @@
 
     // ---------------------------
     // 后处理
-    // request 设置(可调)
+    // request 设置(可调整,但顺序不能动)
+    // 循序为: x位移, y跑偏, z沉头量, 纵倾角, 车速, x加速度
     "requests"  : "chassis_displacements,chassis_displacements,chassis_displacements,chassis_displacements,chassis_velocities,chassis_accelerations",
-    // component 设置(可调)
+    // component 设置,与request匹配(可调整,但顺序不能动)
     "components": "longitudinal,lateral,vertical,pitch,longitudinal,longitudinal",
     // 注释
-    "comments"   : "x_dis, y_dis, z_dis, pitch, velocity, x_acc",
+    "comments"  : "x_dis, y_dis, z_dis, pitch, velocity, x_acc",
     // req单位
     "req_units" : "mm,mm,mm,rad,velocity,g",
 

@@ -4,6 +4,7 @@ import json
 import re
 import math
 import copy
+import pickle
 from pprint import pprint, pformat
 
 # 自建库
@@ -255,18 +256,37 @@ def round_data_dict(data_dic, new_dic, n):
 
 
 
+def save_var(path, data):
+    """
+        保存变量数据
+        path 变量存储路径
+        data 数据
+    """
+    with open(path, 'wb') as f:
+        pickle.dump(data, f)
+    return None
+
+
+def read_var(path):
+    """
+        读取变量存储数据
+        path 目标数据路径
+    """
+
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
+# ------------------------------------------
+# 测试
+def test_var_read_and_save():
+    test = {'a':[1,2,3],'b':'asdf'}
+    save_var('temp.var', test)
+    print(read_var('temp.var'))
+
 
 if __name__ == '__main__':
     pass
-    
-    
-    # pprint(main_cur_static_preload())
-    # pprint(main_cur_static_only())
-    # test_req_select()
-    # vehicle_data
-    
-    
-
-
 
 

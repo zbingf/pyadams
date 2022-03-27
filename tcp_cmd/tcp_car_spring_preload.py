@@ -20,33 +20,35 @@ is_debug = True
 
 
 def sim_static_spring_preload(params):
-    # 计算-静平衡弹簧预载调整
-    # 
-    # 输入
-    # {'gear': 0,
-    #  'mode': 'interactive',
-    #  'model_name': 'MDI_Demo_Vehicle',
-    #  'preload_path': 'acar_full_static_preload_01.spr',       !!!!
-    #  'sim_name': 'auto_sim',
-    #  'sim_type': 'normal'}
-    # 
-    # 输出
-    # {
-    #  'cmd': str, 弹簧预载命令,
-    #  'res_path': 'D:\\document\\ADAMS\\tcp_sim_275\\tcp_sim_8\\auto_sim_static.res',
-    #  'spring_lengths': {'TR_Front_Suspension.nsl_ride_spring': 255.73,
-    #                     'TR_Front_Suspension.nsr_ride_spring': 255.73,
-    #                     'TR_Rear_Suspension.nsl_ride_spring': 255.74,
-    #                     'TR_Rear_Suspension.nsr_ride_spring': 255.73},
-    #  'spring_names': ['TR_Front_Suspension.nsl_ride_spring',
-    #                   'TR_Front_Suspension.nsr_ride_spring',
-    #                   'TR_Rear_Suspension.nsl_ride_spring',
-    #                   'TR_Rear_Suspension.nsr_ride_spring'],
-    #  'spring_values': {'TR_Front_Suspension.nsl_ride_spring': 5488.02,
-    #                    'TR_Front_Suspension.nsr_ride_spring': 5459.04,
-    #                    'TR_Rear_Suspension.nsl_ride_spring': 8017.92,
-    #                    'TR_Rear_Suspension.nsr_ride_spring': 7993.69}
-    # }
+    """
+        计算-静平衡弹簧预载调整
+        
+        输入
+        {'gear': 0,
+         'mode': 'interactive',
+         'model_name': 'MDI_Demo_Vehicle',
+         'preload_path': 'acar_full_static_preload_01.spr',       !!!!
+         'sim_name': 'auto_sim',
+         'sim_type': 'normal'}
+        
+        输出
+        {
+         'cmd': str, 弹簧预载命令,
+         'res_path': 'D:\\document\\ADAMS\\tcp_sim_275\\tcp_sim_8\\auto_sim_static.res',
+         'spring_lengths': {'TR_Front_Suspension.nsl_ride_spring': 255.73,
+                            'TR_Front_Suspension.nsr_ride_spring': 255.73,
+                            'TR_Rear_Suspension.nsl_ride_spring': 255.74,
+                            'TR_Rear_Suspension.nsr_ride_spring': 255.73},
+         'spring_names': ['TR_Front_Suspension.nsl_ride_spring',
+                          'TR_Front_Suspension.nsr_ride_spring',
+                          'TR_Rear_Suspension.nsl_ride_spring',
+                          'TR_Rear_Suspension.nsr_ride_spring'],
+         'spring_values': {'TR_Front_Suspension.nsl_ride_spring': 5488.02,
+                           'TR_Front_Suspension.nsr_ride_spring': 5459.04,
+                           'TR_Rear_Suspension.nsl_ride_spring': 8017.92,
+                           'TR_Rear_Suspension.nsr_ride_spring': 7993.69}
+        }
+    """
     if is_debug: logger.debug("Call sim_static_spring_preload")
 
     model_name = params['model_name']
@@ -115,7 +117,6 @@ def sim_static_spring_preload(params):
     return output_data
 
 
-# 主程序-当前-静平衡弹簧预载调整
 def main_cur_static_preload(**params_replace):
     """
         当前-静平衡弹簧预载调整

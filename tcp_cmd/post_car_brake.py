@@ -112,7 +112,7 @@ def post_brake_sub_result_fig(sub_result, data_key):
     return fig_paths[0]
     
 
-def post_brake(results):
+def post_car_brake(results):
     # 制动后处理
     # results[int(velocity)] = {
     #     "params": data,      # 对应参数
@@ -178,12 +178,12 @@ def test_cur_brake():
     
     # results = tcp_car.sim_cur_brake()
     # pprint(1)
-    r_figs, r_strs = post_brake(results)
+    r_figs, r_strs = post_car_brake(results)
     print(r_figs)
     print(r_strs)
 
     # word文档编辑 测试
-    word_path = r'post_static_only.docx'
+    word_path = r'post_car_static.docx'
     new_word_path = r'new_post_static_only.docx'
     word_obj = WordEdit(word_path)
     word_obj.replace_edit(*r_figs)

@@ -1,8 +1,12 @@
 {
 	// 制动设置
     "auto_brake" : {
+        // 模板路径
 	    "word_path": "./01_template/post_brake.docx",
-	    "new_word_path": "./02_result/new_#model_name#.docx"
+        // 编辑后文档存储位置
+	    "new_word_path": "./02_result/new_#model_name#.docx",
+        // 结果result数据记录
+        "result_path": "./02_result/auto_brake/result_#model_name#_#time#.brake"
     },
     
     // 弹簧预载设置
@@ -10,6 +14,12 @@
     	"cmd_path":"./02_result/post_spring_preload.cmd"
     },
     
+    // static 后处理
+    "auto_static" : {
+        // 车辆状态数据记录
+        "record_path" : "./02_result/vehicle_static.csv" 
+    },
+
     // 图片类型
     "figure_types" : ["jpg", "png"]
 

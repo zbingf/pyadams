@@ -3,6 +3,7 @@
 import json
 from pprint import pprint, pformat
 import tkinter.messagebox
+import logging
 
 # 自建库
 from tcp_car import json_read
@@ -12,6 +13,15 @@ from auto import (
     auto_static_only,
     auto_spring_preload
     )
+
+
+# ----------
+logger = logging.getLogger('auto')
+logger.setLevel(logging.DEBUG)
+is_debug = True
+log_format = '%(levelname)s : %(module)s : %(funcName)s : %(lineno)s : %(message)s'
+logging.basicConfig(format=log_format)
+
 
 def json_save(json_path, data):
     with open(json_path, 'w') as f:
@@ -156,6 +166,7 @@ class TkAuto(TkUi):
         if tkinter.messagebox.askyesnocancel('计算前询问', '是否计算')!=True: 
             self.print('\n不进行计算\n')
             return None
+
         static_sim_type = self.static_sim_type[self.vars['static_sim_type'].get()]
         static_record_type = self.static_record_type[self.vars['static_record_type'].get()]
         self.print('\n整车-static静态-计算中\n')
@@ -167,6 +178,7 @@ class TkAuto(TkUi):
         if tkinter.messagebox.askyesnocancel('计算前询问', '是否计算')!=True: 
             self.print('\n不进行计算\n')
             return None
+
         static_sim_type = self.static_sim_type[self.vars['static_sim_type'].get()]
         static_record_type = self.static_record_type[self.vars['static_record_type'].get()]
         self.print('\n整车-spring预载-自动计算中\n')
