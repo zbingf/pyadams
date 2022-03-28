@@ -28,6 +28,53 @@ None;         None_frame;        菜单;
 """
 
 
+# ----------------
+# plot model
+
+class AjPlotOne:
+    models = {} # 实例数据存储
+    """作图"""
+    def __init__(self, app, title, **kwargs):
+        if title in AjPlotOne.models.keys():
+            pass
+        else:
+            AjPlotOne.models[title] = self
+            
+            self.app = app
+            self.fig = app.addPlotFig(title, **kwargs)
+            self.axes = self.fig.add_subplot(1,1,1)
+
+    def clear(self):
+        self.axes.clear()
+
+    def plot(self, x2s, y2s, legend=None):
+        """
+            x2s: 二维数据
+            y2s: 二维数据
+
+        """
+        for xs, ys in zip(x2s, y2s):
+            self.axes.plot(xs, ys)
+
+        if legend!=None:
+            self.axes.legend(legend)
+
+    def scatter(self, x2s, y2s, legend=None):
+        """
+            x2s: 二维数据
+            y2s: 二维数据
+
+        """
+        for xs, ys in zip(x2s, y2s):
+            self.axes.scatter(xs, ys)
+
+        if legend!=None:
+            self.axes.legend(legend)
+
+
+# ----------------
+# create 
+
 def parase_set_to_list(set_str, suffix=None):
     """
         解析 set_str 数据
@@ -80,19 +127,48 @@ def create_line_ui(app, line):
     ui_type = line[1].lower()
     if ui_type == 'label_entry': 
         app.addLabelEntry(ui_name, label=line[2])
+
     elif ui_type == 'label_entry_auto':
         app.addLabelAutoEntry(ui_name, label=line[2], words=line[3:])
+
     elif ui_type == 'label_entry_file':
         app.addLabelFileEntry(ui_name, label=line[2])
+
+    elif ui_type == 'label_entry_dir':
+        row, column, rowspan, colspan = line[3:7]
+        row = None if row=='None' else int(row)
+        column = 0 if column=='None' else int(column)
+        colspan = 0 if colspan=='None' else int(colspan) 
+        rowspan = 0 if rowspan=='None' else int(rowspan)
+        app.addLabelDirectoryEntry(ui_name, label=line[2], row=row, column=column, colspan=colspan, rowspan=rowspan)
+
     elif ui_type == 'name_button':
         row, column = line[4:6]
         row = None if row=='None' else int(row)
         column = 0 if column=='None' else int(column)
         app.addNamedButton(line[2], ui_name, func=eval(line[3]), row=row, column=column)
+
     elif ui_type == 'check_box':
         app.addCheckBox(ui_name, name=line[2])
+
     elif ui_type == 'menu_item': # 菜单
         app.addMenuItem(ui_name, line[2], func=eval(line[3]))
+
+    elif ui_type == 'aj_plot_one':
+        row, column, rowspan, colspan = line[2:6]
+        row = None if row=='None' else int(row)
+        column = 0 if column=='None' else int(column)
+        colspan = 0 if colspan=='None' else int(colspan) 
+        rowspan = 0 if rowspan=='None' else int(rowspan)
+        AjPlotOne(app, ui_name, row=row, column=column, colspan=colspan, rowspan=rowspan)
+
+    elif ui_type == 'list_box':
+        row, column, rowspan, colspan = line[2:6]
+        row = None if row=='None' else int(row)
+        column = 0 if column=='None' else int(column)
+        colspan = 0 if colspan=='None' else int(colspan) 
+        rowspan = 0 if rowspan=='None' else int(rowspan)
+        app.addListBox(ui_name, row=row, column=column, colspan=colspan, rowspan=rowspan)
 
 
 def create_frame_ui(app, set_str, suffix=None, row=None, column=0):
@@ -121,7 +197,7 @@ def create_frame_ui(app, set_str, suffix=None, row=None, column=0):
 
 
 # ----------------
-#  button callback
+# button callback
 
 def fun_save_params(btn):
     """
@@ -164,15 +240,20 @@ def fun_load_params(btn):
 
 
 
-
-
 # -------------------
 
-SET_PARAM_SAVE_AND_LOAD = """
-f_param_save_and_load;  label_frame;       UI设置读写;
-b_save_param;           name_button;       ---save---;        fun_save_params;   0;0;
-b_load_param;           name_button;       ---load---;        fun_load_params;   0;1;
+SET_PARAM_PLOT_COMPARE = """
+f_param_plot_compare;  label_frame;        Plot Compare;
+e_res_dir;              label_entry_dir;   result_dir;          0;0;0;2;
+b_save_param;           name_button;       ---update---;        update_plot_compare;   None;None;
+l_list_box_main;        list_box;          3;0;0;0;
+l_list_box_sub;         list_box;          3;1;0;0;
+aj_plot_one_1;          aj_plot_one;       0;2;4;0;
 """
+
+def update_plot_compare(btn):
+    print(btn)
+
 
 
 if __name__ == '__main__':
@@ -186,7 +267,7 @@ if __name__ == '__main__':
     app.startTabbedFrame("tab_frame")
     app.startTab('tab_01')
     create_frame_ui(app, SET_RESULT, suffix='A', row=0, column=0)
-    # create_frame_ui(app, SET_PARAM_SAVE_AND_LOAD, suffix=None, row=1, column=0)
+    create_frame_ui(app, SET_PARAM_PLOT_COMPARE, suffix=None, row=1, column=0)
     app.stopTab()
 
     app.startTab('tab_02')
@@ -197,5 +278,7 @@ if __name__ == '__main__':
 
     app.stopTabbedFrame()
 
+    app.updateListBox('l_list_box_main', [1,2,3,4,5,5,6,7]*2)
+    app.updateListBox('l_list_box_sub', [1,2,3,4,5,5,6,7]*2)
 
     app.go() # 运行UI

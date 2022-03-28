@@ -1,15 +1,18 @@
 
-# 
+# TCP CMD
 
-## TCP CMD
+## ADAMS连接方式
 + 通过TCP控制adams
+
 
 ## 后处理
 + win32com 操作 word
 
 
-# 结构
+## 程序结构
 Code.xlsx
+
+##
 
 
 # 版本
