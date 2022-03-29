@@ -206,7 +206,10 @@ def auto_brake(record_state=1, params_static_replace=None):
 
     result_path = parse_path(AUTO_SET['auto_brake']['result_path'])
     result_path = set_new_path(result_path)
+    result_data_path = parse_path(AUTO_SET['auto_brake']['result_data_path'])
+    result_data_path = set_new_path(result_data_path)
     if is_debug: logger.debug("result_path: {result_path}")
+    if is_debug: logger.debug("result_data_path: {result_data_path}")
 
     static_record_path = parse_path(AUTO_SET['auto_static']['record_path'])
     if is_debug: logger.debug("static_record_path: {static_record_path}")
@@ -227,6 +230,7 @@ def auto_brake(record_state=1, params_static_replace=None):
 
     if tkinter.messagebox.askyesno('提问', '是否保存brake result?'):
         tcp_car.save_var(result_path, obj.result_brake)
+        tcp_car.save_var(result_data_path, tcp_car_brake.parse_brake_result(obj.result_brake))
 
     if is_debug: logger.debug("End auto_brake")
 

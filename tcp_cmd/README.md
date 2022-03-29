@@ -12,8 +12,6 @@
 ## 程序结构
 Code.xlsx
 
-##
-
 
 # 版本
 version 1.12

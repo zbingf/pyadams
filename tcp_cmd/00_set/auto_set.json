@@ -6,7 +6,8 @@
         // 编辑后文档存储位置
 	    "new_word_path": "./02_result/new_#model_name#.docx",
         // 结果result数据记录
-        "result_path": "./02_result/auto_brake/result_#model_name#_#time#.brake"
+        "result_path": "./02_result/auto_brake/result_#model_name#_#time#.brake",
+        "result_data_path": "./02_result/auto_brake/result_#model_name#_#time#.brake_data"
     },
     
     // 弹簧预载设置

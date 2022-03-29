@@ -215,6 +215,17 @@ def sim_cur_brake(params):
     return results
 
 
+def parse_brake_result(brake_data):
+
+    value_params, list_params = parse_result_data(brake_data, {}, {}, 'v')
+    data = {
+        "value": value_params, 
+        "list": list_params,
+        "samplerate":brake_data[list(brake_data.keys())[0]]["samplerate"],
+    }
+    return data
+
+
 def main_cur_brake(**params_replace):
 
     params = json_read(ACAR_FULL_BRAKE_PATH) 
