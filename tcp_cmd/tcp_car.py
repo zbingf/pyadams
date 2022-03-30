@@ -280,7 +280,8 @@ def read_var(path):
 
 
 
-func_prefix = lambda p_str, str1: p_str+'_'+str1
+# func_prefix = lambda p_str, str1: p_str+'_'+str1
+func_prefix = lambda p_str, str1: p_str+'.'+str1
 
 def parse_result_data(params, value_params, list_params, prefix_str=None):
     

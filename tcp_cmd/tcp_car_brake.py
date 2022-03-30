@@ -205,7 +205,7 @@ def sim_cur_brake(params):
             "result_t": result_t,               # 目标加速度制动, 相对开始制动时的状态(速度和加速度绝对值)
             "result_total_t": result_total_t,   # 目标加速度制动, 完整数据, 未处理
             "brake_t": brake_t,                 # 目标加速度制动值
-            "g_t": params['target_g'],            # 目标加速度
+            "g_t": params['target_g'],          # 目标加速度
 
             "samplerate": samplerate,           # 采样Hz
             }

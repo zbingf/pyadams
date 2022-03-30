@@ -1,4 +1,6 @@
-
+"""
+    https://www.w3cschool.cn/doc_tcl_tk/tcl_tk-tkcmd-bind-htm.html
+"""
 
 # 标准库
 from pprint import pprint, pformat
@@ -92,7 +94,7 @@ class AjPlotOne:
     def clear(self):
         self.axes.clear()
 
-    def plot(self, x2s, y2s, legend=None):
+    def plot(self, x2s, y2s, legend=None, xlabel=None, ylabel=None):
         """
             x2s: 二维数据
             y2s: 二维数据
@@ -103,8 +105,12 @@ class AjPlotOne:
 
         if legend!=None:
             self.axes.legend(legend)
+        if xlabel!=None:
+            self.axes.set_xlabel(xlabel)
+        if ylabel!=None:
+            self.axes.set_ylabel(ylabel)
 
-    def scatter(self, x2s, y2s, legend=None):
+    def scatter(self, x2s, y2s, legend=None, xlabel=None, ylabel=None):
         """
             x2s: 二维数据
             y2s: 二维数据
@@ -116,6 +122,11 @@ class AjPlotOne:
         if legend!=None:
             self.axes.legend(legend)
 
+        if xlabel!=None:
+            self.axes.set_xlabel(xlabel)
+
+        if ylabel!=None:
+            self.axes.set_ylabel(ylabel)
 
 class AjPlotCompareLabelFrame:
 
@@ -135,120 +146,172 @@ class AjPlotCompareLabelFrame:
         self.names[name] = new_name
         return new_name
 
-    def func_lb_sub_button1(self, btn):
-        # print(btn)
-        datas = self.datas
-        # print(datas)
-        list_name = self.app.getListBox(self.names['lb_sub'])[0]
-        print(list_name)
-        xs, ys = [], []
-        names = []
-        for name in datas:
-            y = datas[name]['list'][list_name]
-            x = [n/datas[name]['samplerate'] for n in range(len(y))]
-            xs.append(x)
-            ys.append(y)
-            names.append(name)
-        # print(len(xs))
-        self.plot(xs, ys, names)
+    def main_ui(self):
+        """程序框体搭建"""
 
-    def func_lb_main_button1(self, btn):
-        # print(btn)
+        app = self.app
+
+        # 0.0
+        app.addLabelDirectoryEntry(self.obj_name("result_dir"), label="result_dir", row=0, column=0, rowspan=0, colspan=0)
+        # 0.1
+        app.addNamedButton("result_search", self.obj_name("result_search"), func=self.func_result_search, row=0, column=1, rowspan=0, colspan=1)
+
+        # 1.0
+        lob_file_type = app.addLabelOptionBox(self.obj_name("file_type"), ["None"], label="file_type", row=1, column=0, rowspan=0, colspan=0)
+        lob_file_type.configure(width=20)
+        # 1.1
+        app.addButton(self.obj_name("file_type_update"), func=self.func_update_file_type, row=1, column=1, rowspan=0, colspan=0)
+        app.setButton(self.obj_name("file_type_update"), "update")
+        # 1.2
+        lb_main = app.addListBox(self.obj_name("lb_main"), row=1, column=2, rowspan=0, colspan=0)
+        app.setListBoxMulti(self.obj_name("lb_main"))
+        lb_main.configure(width=30, height=5, exportselection=False)
+
+        # 3.0
+        lb_x = app.addListBox(self.obj_name("lb_x"), row=3, column=0, rowspan=0, colspan=1)
+        lb_x.configure(width=30, height=20, exportselection=False)
+        # 3.2
+        lb_y = app.addListBox(self.obj_name("lb_y"), row=3, column=2, rowspan=0, colspan=0)
+        lb_y.configure(width=30, height=20, exportselection=False)
+
+        self.obj_plot = AjPlotOne(app, self.obj_name("plot"), row=0, column=3, colspan=0, rowspan=4)
+
+        # 4.0
+        grid = app.addGrid(self.obj_name("value_grid"), [["None"], ["None"]], row=4, column=0, colspan=4, rowspan=0)
+        grid.configure(width=1200, height=400)
+
+
+    def bind_link(self):
+        """事件关联"""
+        app = self.app
+        
+        lb_main = app.widgetManager.get(app.Widgets.ListBox, self.names['lb_main'])
+        lb_main.bind("<<ListboxSelect>>", self.func_lb_main_select)
+        
+        lb_y = app.widgetManager.get(app.Widgets.ListBox, self.names['lb_y'])
+        lb_y.bind("<<ListboxSelect>>", self.func_lb_y_select)
+        
+        lb_x = app.widgetManager.get(app.Widgets.ListBox, self.names['lb_x'])
+        lb_x.bind("<<ListboxSelect>>", self.func_lb_x_select)
+
+
+    def func_lb_main_select(self, btn):
+        # print('call func_lb_main_select')
         names = self.app.getListBox(self.names['lb_main'])
+        if not names: return None
+        # print(names)
         name_type = self.app.getOptionBox(self.names['file_type'])
         datas = {}
         for name in names:
             file_path = self.obj_DirResultSearch.get_file_path_by_name_and_type(name, name_type)
             datas[name] = read_var(file_path) 
-        self.set_lb_sub(list(datas[name]['list'].keys()))
+            # 数据格式 {'value':{...}, 'samplerate', 'list':{...}}
+
+        # print(name)
         self.datas = datas
+        # updata
+        self.set_lb_y(list(datas[name]['list'].keys()))
+        self.set_lb_x(['time']+list(datas[name]['list'].keys()))
+        self.set_value_grid(datas)
+
+    def func_lb_x_select(self, btn):
+        # print('call func_lb_x_select')
+        self.select_x_names = self.app.getListBox(self.names['lb_x'])
+
+    def func_lb_y_select(self, btn):
+        # print('call func_lb_y_select')
+
+        self.select_y_names = self.app.getListBox(self.names['lb_y'])
+        datas = self.datas
+
+        y_name = self.select_y_names[0]
+        x_name = self.select_x_names[0]
+        # print(x_name)
+        xs, ys = [], []
+        names = []
+        for name in datas:
+            y = datas[name]['list'][y_name]
+            if x_name=='time':
+                x = [n/datas[name]['samplerate'] for n in range(len(y))]
+            else:
+                x = datas[name]['list'][x_name]
+            xs.append(x)
+            ys.append(y)
+            names.append(name)
+        # print(len(xs))
+
+        self.plot(xs, ys, names, xlabel=x_name, ylabel=y_name)
+        # help(self.obj_plot.axes)
+        
 
     def func_result_search(self, btn):
         """
             结果数据检索
         """
         result_dir = self.app.getEntry(self.names["result_dir"])
-        print(result_dir)
         drs = DirResultSearch(result_dir)
-
         self.app.changeOptionBox(self.names['file_type'], drs.get_types(), callFunction=True)
-
         self.obj_DirResultSearch = drs
-        # self.set_lb_main([1,2,3,4,5,5,6,7]*2)
 
     def func_update_file_type(self, btn):
+        """ 文档数据更新 """
 
         file_type = self.app.getOptionBox(self.names['file_type'])
         if file_type == "None": return None
         names = self.obj_DirResultSearch.get_names_by_type(file_type)
         self.set_lb_main(names)
 
-    def main_ui(self):
-        app = self.app
-
-        app.addLabelDirectoryEntry(self.obj_name("result_dir"), label="result_dir", row=0, column=0, colspan=0, rowspan=0)
-        app.addNamedButton("result_search", self.obj_name("result_search"), func=self.func_result_search, row=0, column=1)
-
-        app.addLabelOptionBox(self.obj_name("file_type"), ["None"], label="file_type", row=1, column=0, colspan=0)
-        app.addButton(self.obj_name("file_type_update"), func=self.func_update_file_type, row=1, column=1)
-        app.setButton(self.obj_name("file_type_update"), "update")
-
-        app.addListBox(self.obj_name("lb_main"), row=2, column=0, colspan=0, rowspan=0)
-        app.setListBoxMulti(self.obj_name("lb_main"))
-
-        app.addListBox(self.obj_name("lb_sub"), row=2, column=1, colspan=0, rowspan=0)
-        
-        self.obj_plot = AjPlotOne(app, self.obj_name("plot"), row=0, column=2, colspan=0, rowspan=3)
-
-
-    def bind_link(self):
-        app = self.app
-        
-        lb_main = app.widgetManager.get(app.Widgets.ListBox, self.names['lb_main'])
-        lb_main.bind("<Button-1>", self.func_lb_main_button1)
-
-        lb_sub = app.widgetManager.get(app.Widgets.ListBox, self.names['lb_sub'])
-        lb_sub.bind("<Button-1>", self.func_lb_sub_button1)
-
-        # app.setListBoxFunction("colours", btnPress)
-        # app.setListBoxFunction(self.names['lb_main'], self.func_lb_main_button1)
-        # app.setListBoxFunction(self.names['lb_sub'], self.func_lb_sub_button1)
-        # app.setListBoxChangeFunction(self.names['lb_main'], self.func_lb_main_button1)
-        # app.setListBoxChangeFunction(self.names['lb_sub'], self.func_lb_sub_button1)
-
-        # ob_file_type = app.widgetManager.get(app.Widgets.OptionBox, self.names['file_type'])
-        # ob_file_type.bind("<Button-1>", self.func_result_search)
 
     def set_lb_main(self, list1):
+        """更新main列表"""
         self.app.updateListBox(self.names['lb_main'], list1, callFunction=False)
 
-    def set_lb_sub(self, list1):
-        self.app.updateListBox(self.names['lb_sub'], list1, callFunction=False)
+    def set_lb_y(self, list1):
+        """更新sub列表"""
+        self.app.updateListBox(self.names['lb_y'], list1, callFunction=False)
+
+    def set_lb_x(self, list1):
+        self.app.updateListBox(self.names['lb_x'], list1, callFunction=False) 
+
+
+    def set_value_grid(self, datas):
+        """
+            参数表格设置
+        """
+        headers = ['-']
+        for name in datas: headers.append(name)
+        list2d = [headers]
+
+        for key in datas[headers[1]]['value']:
+            list1d = []
+            for name in datas:
+                value = datas[name]['value'][key]
+                if isinstance(value, float): value = round(value, 2)
+                if not list1d: list1d.append(key)
+                list1d.append(value)
+            list2d.append(list1d)
+
+        self.app.replaceAllGridRows(self.names['value_grid'], list2d)
 
     def plot(self, *args, **kwargs):
-        # print(kwargs)
+        # 作图
         self.obj_plot.clear()
         self.obj_plot.plot(*args, **kwargs)
         self.app.refreshPlot(self.names['plot'])
 
     def scatter(self,):
+        # 作散点图
+        self.obj_plot.clear()
         self.obj_plot.scatter(*args, **kwargs)
-
+        self.app.refreshPlot(self.names['plot'])
 
 
 if __name__ == '__main__':
 
     app=gui()
-    app.setFont(12)
+    app.setFont(10)
     app.setFont('仿宋')
-    # create_frame_ui(app, SET_MENU_SAVE_AND_LOAD)
-    # aj_plot_compare(app)
-
-    ajpc = AjPlotCompareLabelFrame(app, "A", label="Plot Compare A")
-    print(ajpc.names)
-    # app.updateListBox('l_list_box_main', [1,2,3,4,5,5,6,7]*2)
-    # app.updateListBox('l_list_box_sub', [1,2,3,4,5,5,6,7]*2)
-
     
+    ajpc = AjPlotCompareLabelFrame(app, "A", label="Plot Compare Time")
 
     app.go() # 运行UI

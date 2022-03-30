@@ -35,7 +35,7 @@ json_read = tcp_car.json_read
 AUTO_SET = json_read(AUTO_SET_PATH)
 
 
-get_cur_time = lambda: time.strftime('%Y%m%d_%H_%M', time.localtime(time.time()))
+get_cur_time = lambda: time.strftime('%Y%m%d_%H%M', time.localtime(time.time()))
 
 
 def parse_path(path):
@@ -56,7 +56,7 @@ def parse_path(path):
     return new_path
 
 
-def set_new_path(path):
+def get_new_path(path):
     """
         若文件存在则加后缀
     """
@@ -201,13 +201,13 @@ def auto_brake(record_state=1, params_static_replace=None):
     if is_debug: logger.debug("word_path: {word_path}")
 
     new_word_path = parse_path(AUTO_SET['auto_brake']['new_word_path'])
-    new_word_path = set_new_path(new_word_path)
+    new_word_path = get_new_path(new_word_path)
     if is_debug: logger.debug("new_word_path: {new_word_path}")
 
     result_path = parse_path(AUTO_SET['auto_brake']['result_path'])
-    result_path = set_new_path(result_path)
+    result_path = get_new_path(result_path)
     result_data_path = parse_path(AUTO_SET['auto_brake']['result_data_path'])
-    result_data_path = set_new_path(result_data_path)
+    result_data_path = get_new_path(result_data_path)
     if is_debug: logger.debug("result_path: {result_path}")
     if is_debug: logger.debug("result_data_path: {result_data_path}")
 
