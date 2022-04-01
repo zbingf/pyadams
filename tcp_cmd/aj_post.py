@@ -12,6 +12,7 @@ import pickle
 
 # 调用库
 from appJar import gui
+from mat4py import loadmat, savemat
 
 # # 自建库
 # from ajui import *
@@ -21,9 +22,9 @@ def read_var(path):
         读取变量存储数据
         path 目标数据路径
     """
-
-    with open(path, 'rb') as f:
-        data = pickle.load(f)
+    data = loadmat(path)
+    # with open(path, 'rb') as f:
+    #     data = pickle.load(f)
     return data
 
 
@@ -43,8 +44,8 @@ class DirResultSearch:
         for file_name in os.listdir(path):
             abs_path = os.path.join(path, file_name)
             if not os.path.isdir(abs_path):
-                name = '.'.join(file_name.split('.')[:-1])
-                name_type = file_name.split('.')[-1]
+                name = '.'.join(file_name.split('.')[:-2])
+                name_type = '.'.join(file_name.split('.')[-2:])
                 file_paths[file_name] = abs_path
                 file_types[file_name] = name_type
                 file_names[file_name] = name

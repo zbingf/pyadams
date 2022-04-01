@@ -4,10 +4,10 @@
         // 模板路径
 	    "word_path": "./01_template/post_brake.docx",
         // 编辑后文档存储位置
-	    "new_word_path": "./02_result/new_#model_name#.docx",
+	    "new_word_path": "./02_result/01_auto_brake/03_docx/new_#model_name#.docx",
         // 结果result数据记录
-        "result_path": "./02_result/auto_brake/#model_name#_#time#.brake",
-        "result_data_path": "./02_result/auto_brake/#model_name#_#time#.brake_data"
+        "result_path": "./02_result/01_auto_brake/01_result/#model_name#_#time#.BraRes.mat",
+        "result_data_path": "./02_result/01_auto_brake/02_data/#model_name#_#time#.BraDat.mat"
     },
     
     // 弹簧预载设置

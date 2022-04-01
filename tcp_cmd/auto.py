@@ -8,10 +8,14 @@ import time
 import tkinter.messagebox
 import logging
 
+# 调用库
+from mat4py import loadmat, savemat
+
 
 # 自建库
 import tcp_cmd_fun as tcmdf
 import tcp_car
+import post
 import tcp_car_brake
 import tcp_car_static
 import tcp_car_spring_preload
@@ -229,8 +233,10 @@ def auto_brake(record_state=1, params_static_replace=None):
     obj.remove_figs()
 
     if tkinter.messagebox.askyesno('提问', '是否保存brake result?'):
-        tcp_car.save_var(result_path, obj.result_brake)
-        tcp_car.save_var(result_data_path, tcp_car_brake.parse_brake_result(obj.result_brake))
+        savemat(result_path, obj.result_brake)
+        savemat(result_data_path, post_car_brake.parse_brake_result(obj.result_brake))
+        # post.save_var(result_path, obj.result_brake)
+        # post.save_var(result_data_path, tcp_car_brake.parse_brake_result(obj.result_brake))
 
     if is_debug: logger.debug("End auto_brake")
 
