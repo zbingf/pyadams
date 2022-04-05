@@ -177,17 +177,22 @@ def stewart_create(model_name,center_point,parameter):
 	return viewobj
 
 
-if __name__ == "__main__":
+if __name__ != "aview_main":
+# if __name__ == "__main__":
 	# 在本界面运行
 	print('rig_stewart 以 __main__ 运行')
+	from adams_py27 import edit_py_file_for_aview
+	edit_py_file_for_aview('CUR_FILE_DIR', __file__)
+	
 	cmd_str = 'file python read file_name="{}"'.format(__file__)
 
-	sys.path.append(r'..')
-	import call.tcp_link as tcp_link
+	# sys.path.append(r'..')
+	import pyadams.call.tcp_link as tcp_link
 	tcp_link.cmd_send(cmd_str)
 
 else:
-	sys.path.append(r'D:\github\pycae\pyadams\view')
+	CUR_FILE_DIR = r"D:\software\Anaconda3\Lib\site-packages\pyadams-0.1-py3.8.egg\pyadams\view"
+	sys.path.append(CUR_FILE_DIR)
 	from view_fun import *
 	# run in adams 2017.2
 

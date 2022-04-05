@@ -196,7 +196,7 @@ if __name__ == "__main__":
 		sys.path.append(r'D:\github\pycae\pyadams\view')
 		import view_fun
 		from view_fun import *
-		# run in adams 2017.2
+		# run in adams 2019
 
 		model_name = 'six_dof_rig_stewart'
 		center_point = [400,0,250]

@@ -314,6 +314,7 @@ def request_acc_flex(viewobj,marker_names,node_ids,flexname='frame'):
 
 	return viewobj
 
+
 if __name__ == "__main__":
 	# 在本界面运行
 	cmd_str = 'file python read file_name="{}"'.format(__file__)
