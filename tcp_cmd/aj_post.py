@@ -195,7 +195,6 @@ class AjPlotCompareLabelFrame:
         lb_x = app.widgetManager.get(app.Widgets.ListBox, self.names['lb_x'])
         lb_x.bind("<<ListboxSelect>>", self.func_lb_x_select)
 
-
     def func_lb_main_select(self, btn):
         # print('call func_lb_main_select')
         names = self.app.getListBox(self.names['lb_main'])

@@ -147,7 +147,12 @@ def res_handle_crc_cal(res_path, L, docx_path=None, reqs=None, comps=None, splin
 
     # 0.4g 状态对应侧偏角
     loc_04g = abs(lateralAcc) > (0.4*9.8)
-    rollDis_04g = rollDis[loc_04g][0]
+    try:
+        rollDis_04g = rollDis[loc_04g][0]
+    except:
+        rollDis_04g = 0
+        logger.info(f'侧向加速度不足0.4g')
+
     # 2m/s^2 状态
     loc_2acc    = abs(lateralAcc) > 2
     rollDis_2acc= abs(rollDis[loc_2acc][0])

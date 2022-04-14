@@ -802,7 +802,6 @@ def sim_pre_calc():
         return cur_dir, False
 
 
-
 def sim_post_calc(cur_dir):
     """
         仿真计算-后置
@@ -811,6 +810,36 @@ def sim_post_calc(cur_dir):
     cur_dir = cur_dir.replace('\\','/')
     _query_send(f'chdir("{cur_dir}")')
 
+
+def watting_sim_finished(res_path, sim_minute=200): 
+    ''' 
+        通过判断 msg内容 来鉴别仿真是否完结
+        res_path路径为Adams仿真路径
+        sim_minute 为仿真允许时间，单位 分钟min
+    '''
+    msg_path = res_path[0:-3]+r'msg'
+    n = 1
+    isSuccess = False
+    line_finished = 'finished-----'
+
+    while True:
+        if os.path.exists(msg_path):
+            with open(msg_path, 'r') as f:
+                for line in f.readlines():
+                    line = line.strip().lower().replace(' ','')
+                    if line_finished == line:
+                        # print('is_sim_success call Finished')
+                        isSuccess = True
+                        break
+            if isSuccess:
+                break
+        # 暂停
+        time.sleep(0.2)
+        n += 1
+        if n > sim_minute*5*60:
+            if is_debug: logger.warning("进程计算超时, 停止计算")
+            break
+    return isSuccess
 
 
 def sim_car(data, sim_name_func, set_sim_func, res_name_func):
@@ -827,14 +856,16 @@ def sim_car(data, sim_name_func, set_sim_func, res_name_func):
     # 前置
     cur_dir, sim_dir = sim_pre_calc()
     set_analysis_del(sim_name_func(sim_name))
-
+    
     # 仿真
     set_sim_func(data)
     
+    res_path = res_name_func(sim_dir, sim_name)
+    
     # 后置
     sim_post_calc(cur_dir)
-
-    res_path = res_name_func(sim_dir, sim_name)
+    # time.sleep(1)
+    # watting_sim_finished(res_path)
     
     result = {
         'cur_dir' : os.path.abspath(cur_dir),
@@ -1070,6 +1101,131 @@ def sim_car_sus_opposite(data):
 
 
 
+# -------------------------------------------
+# ---悬架-static load仿真---
+
+_sim_name_sus_static_load = lambda sim_name: sim_name + '_static_load'
+_sim_res_sus_static_load = lambda sim_dir, sim_name: os.path.join(sim_dir, sim_name+'_static_load.res')
+
+CMD_SIM_CAR_STATIC_LOAD_SUS = """
+ acar analysis suspension static_load submit &
+ assembly=.#model_name# &
+ output_prefix="#sim_name#" &
+ nsteps=#step# &
+ analysis_mode=#mode# &
+ comment="" &
+ log_file=yes &
+ coordinate_system=vehicle &
+ steering_input=#steering_input# &
+ vertical_setup=#vertical_setup# &
+ vertical_input=#vertical_input# &
+ vertical_type=absolute &
+ steer_upper=#steer_upper# &
+ steer_lower=#steer_lower# &
+ align_tor_upr_l=#align_tor_upr_l# &
+ align_tor_upr_r=#align_tor_upr_r# &
+ align_tor_lwr_l=#align_tor_lwr_l# &
+ align_tor_lwr_r=#align_tor_lwr_r# &
+ otm_upr_l=#otm_upr_l# &
+ otm_upr_r=#otm_upr_r# &
+ otm_lwr_l=#otm_lwr_l# &
+ otm_lwr_r=#otm_lwr_r# &
+ roll_res_tor_upr_l=#roll_res_tor_upr_l# &
+ roll_res_tor_upr_r=#roll_res_tor_upr_r# &
+ roll_res_tor_lwr_l=#roll_res_tor_lwr_l# &
+ roll_res_tor_lwr_r=#roll_res_tor_lwr_r# &
+ damage_rad_l=#damage_rad_l# &
+ damage_rad_r=#damage_rad_r# &
+ damage_for_upr_l=#damage_for_upr_l# &
+ damage_for_upr_r=#damage_for_upr_r# &
+ damage_for_lwr_l=#damage_for_lwr_l# &
+ damage_for_lwr_r=#damage_for_lwr_r# &
+ verti_for_upr_l=#verti_for_upr_l# &
+ verti_for_upr_r=#verti_for_upr_r# &
+ verti_for_lwr_l=#verti_for_lwr_l# &
+ verti_for_lwr_r=#verti_for_lwr_r# &
+ later_for_upr_l=#later_for_upr_l# &
+ later_for_upr_r=#later_for_upr_r# &
+ later_for_lwr_l=#later_for_lwr_l# &
+ later_for_lwr_r=#later_for_lwr_r# &
+ brake_for_upr_l=#brake_for_upr_l# &
+ brake_for_upr_r=#brake_for_upr_r# &
+ brake_for_lwr_l=#brake_for_lwr_l# &
+ brake_for_lwr_r=#brake_for_lwr_r# &
+ drivn_for_upr_l=#drivn_for_upr_l# &
+ drivn_for_upr_r=#drivn_for_upr_r# &
+ drivn_for_lwr_l=#drivn_for_lwr_l# &
+ drivn_for_lwr_r=#drivn_for_lwr_r# 
+"""
+
+def set_sim_car_sus_static_load(data):
+    """
+    运行仿真
+    data = {
+        "model_name":
+        "sim_name"  : 
+        "step"      :
+        "mode"  :
+        }
+    """
+    # model_name
+    # sim_name
+
+    if "mode" not in data: data["mode"] = 'interactive'
+    if "steering_input" not in data: data["steering_input"] = "angle"
+    if "vertical_setup" not in data: data["vertical_setup"] = "wheel_center_height"
+    if "vertical_input" not in data: data["vertical_input"] = "wheel_center_height"
+
+    # 加载参数
+    if "steer_upper" not in data: data["steer_upper"] = 0
+    if "steer_lower" not in data: data["steer_lower"] = 0
+    if "align_tor_upr_l" not in data: data["align_tor_upr_l"] = 0
+    if "align_tor_upr_r" not in data: data["align_tor_upr_r"] = 0
+    if "align_tor_lwr_l" not in data: data["align_tor_lwr_l"] = 0
+    if "align_tor_lwr_r" not in data: data["align_tor_lwr_r"] = 0
+    if "otm_upr_l" not in data: data["otm_upr_l"] = 0
+    if "otm_upr_r" not in data: data["otm_upr_r"] = 0
+    if "otm_lwr_l" not in data: data["otm_lwr_l"] = 0
+    if "otm_lwr_r" not in data: data["otm_lwr_r"] = 0
+    if "roll_res_tor_upr_l" not in data: data["roll_res_tor_upr_l"] = 0
+    if "roll_res_tor_upr_r" not in data: data["roll_res_tor_upr_r"] = 0
+    if "roll_res_tor_lwr_l" not in data: data["roll_res_tor_lwr_l"] = 0
+    if "roll_res_tor_lwr_r" not in data: data["roll_res_tor_lwr_r"] = 0
+    if "damage_rad_l" not in data: data["damage_rad_l"] = 0
+    if "damage_rad_r" not in data: data["damage_rad_r"] = 0
+    if "damage_for_upr_l" not in data: data["damage_for_upr_l"] = 0
+    if "damage_for_upr_r" not in data: data["damage_for_upr_r"] = 0
+    if "damage_for_lwr_l" not in data: data["damage_for_lwr_l"] = 0
+    if "damage_for_lwr_r" not in data: data["damage_for_lwr_r"] = 0
+    if "verti_for_upr_l" not in data: data["verti_for_upr_l"] = 0
+    if "verti_for_upr_r" not in data: data["verti_for_upr_r"] = 0
+    if "verti_for_lwr_l" not in data: data["verti_for_lwr_l"] = 0
+    if "verti_for_lwr_r" not in data: data["verti_for_lwr_r"] = 0
+    if "later_for_upr_l" not in data: data["later_for_upr_l"] = 0
+    if "later_for_upr_r" not in data: data["later_for_upr_r"] = 0
+    if "later_for_lwr_l" not in data: data["later_for_lwr_l"] = 0
+    if "later_for_lwr_r" not in data: data["later_for_lwr_r"] = 0
+    if "brake_for_upr_l" not in data: data["brake_for_upr_l"] = 0
+    if "brake_for_upr_r" not in data: data["brake_for_upr_r"] = 0
+    if "brake_for_lwr_l" not in data: data["brake_for_lwr_l"] = 0
+    if "brake_for_lwr_r" not in data: data["brake_for_lwr_r"] = 0
+    if "drivn_for_upr_l" not in data: data["drivn_for_upr_l"] = 0
+    if "drivn_for_upr_r" not in data: data["drivn_for_upr_r"] = 0
+    if "drivn_for_lwr_l" not in data: data["drivn_for_lwr_l"] = 0
+    if "drivn_for_lwr_r" not in data: data["drivn_for_lwr_r"] = 0
+
+
+    new_cmd = _cmd_replace(CMD_SIM_CAR_STATIC_LOAD_SUS, **_dict_data_change(data))
+    # print(new_cmd)
+    cmd_send(new_cmd)
+    return None
+
+
+def sim_car_full_static_load(data):
+    """ 完整car静平衡仿真 """
+    return sim_car(data, _sim_name_sus_static_load, set_sim_car_sus_static_load, _sim_res_sus_static_load)
+
+
 # ------------------------------------------------
 # ------------------------------------------------
 # --------------------TEST------------------------
@@ -1182,6 +1338,18 @@ def test_set_sim_car_sus_opposite():
     # test_set_sim_car_sus_opposite()
 
 
+def test_sim_full_static():
+    model_name = get_current_model()
+    data = {
+        "model_name": model_name,
+        "sim_name" : "auto_sim",
+        "step"     : 100,
+    }
+    result = sim_car_full_static_load(data)
+    pprint(result)
+
+
+# test_sim_full_static()
 # test_sim_brake()
 # test_query_element_model()
 
