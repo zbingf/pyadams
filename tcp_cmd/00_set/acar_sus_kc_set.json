@@ -1,0 +1,257 @@
+// acar_sus_kc.json
+{
+    // KC程序参数设置
+
+    // 参数设置
+    "param": {
+        // 平行轮跳
+        "parallel": {
+            "sim_name" : "kc_sim",
+            "mode"     : "background",
+            "step" : 100,
+            // 上跳
+            "bump" : 50,
+            // 下跳
+            "rebound" : -50
+        },
+
+        // 反向轮跳
+        "opposite": {
+            "sim_name" : "kc_sim",
+            "mode"     : "background",
+            "step" : 100,
+            // 上跳
+            "bump" : 50,
+            // 下跳
+            "rebound" : -50
+        },
+
+        // 纵向力加载
+        "brake": {
+            "sim_name" : "kc_sim_brake",
+            "mode"     : "background",
+            "step"     : 100,
+            // brake force upper left
+            "brake_for_upr_l" : 5000,
+            // brake force upper right
+            "brake_for_upr_r" : 5000,
+            // brake force lower left
+            "brake_for_lwr_l" : -5000,
+            // brake force lower right
+            "brake_for_lwr_r" : -5000
+        },
+
+        // 侧向力加载
+        "damage": {
+            "sim_name" : "kc_sim_damage",
+            "mode"     : "background",
+            "step"     : 100,
+            "damage_for_upr_l" : 5000,
+            "damage_for_upr_r" : 5000,
+            "damage_for_lwr_l" : -5000,
+            "damage_for_lwr_r" : -5000
+        },
+
+        // 回正力矩加载
+        "align": {
+            "sim_name" : "kc_sim_align",
+            "mode"     : "background",
+            "step"     : 100,
+            "align_tor_upr_l" : 5000,
+            "align_tor_upr_r" : 5000,
+            "align_tor_lwr_l" : -5000,
+            "align_tor_lwr_r" : -5000
+        }
+    },
+
+    // request及component
+    "req_comp":{
+        // 平行
+        "reqs_parallel": [
+            // 轮跳
+            "wheel_travel","wheel_travel",
+            // 轮胎垂向力
+            "left_tire_forces","right_tire_forces",
+            // 前束角
+            "toe_angle","toe_angle",
+            // 外倾角
+            "camber_angle","camber_angle",
+            // 轮距
+            "wheel_travel_track","wheel_travel_track",
+            // 轴距
+            "wheel_travel_base","wheel_travel_base",
+            // 主销后倾角
+            "caster_angle","caster_angle",
+            // 主销后倾拖距
+            "caster_moment_arm","caster_moment_arm",
+            // 主销内倾角
+            "kingpin_incl_angle","kingpin_incl_angle",
+            // 主销偏置距
+            "scrub_radius","scrub_radius",
+            // 抗点头率
+            "anti_dive_braking","anti_dive_braking",
+            // 抗抬头率
+            "anti_lift_acceleration","anti_lift_acceleration",
+            // 轮胎接地点垂向刚度
+            "ride_rate","ride_rate",
+            // 轮心垂向刚度
+            "wheel_rate","wheel_rate"
+        ],
+
+        "comps_parallel": [
+            "vertical_left","vertical_right",
+            "normal","normal",
+            "left","right",
+            "left","right",
+            "track_left","track_right",
+            "base_left","base_right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "left","right"
+        ],
+
+        // 反向
+        "reqs_opposite": [
+            // 轮跳
+            "wheel_travel","wheel_travel",
+            // 轮胎垂向力
+            "left_tire_forces","right_tire_forces",
+            // 前束角
+            "toe_angle","toe_angle",
+            // 外倾角
+            "camber_angle","camber_angle",
+            // 轮距
+            "wheel_travel_track","wheel_travel_track",
+            // 轴距
+            "wheel_travel_base","wheel_travel_base",
+            // 主销后倾角
+            "caster_angle","caster_angle",
+            // 主销后倾拖距
+            "caster_moment_arm","caster_moment_arm",
+            // 主销内倾角
+            "kingpin_incl_angle","kingpin_incl_angle",
+            // 主销偏置距
+            "scrub_radius","scrub_radius",
+            // 悬架侧倾角刚度
+            "susp_roll_rate",
+            // 总侧倾角刚度
+            "total_roll_rate",
+            // 侧倾中心高
+            "roll_center_location"
+            ],
+
+        "comps_opposite": [
+            "vertical_left","vertical_right",
+            "normal","normal",
+            "left","right",
+            "left","right",
+            "track_left","track_right",
+            "base_left","base_right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "left","right",
+            "suspension_roll_rate",
+            "total_roll_rate",
+            "vertical"
+        ],
+
+        // 纵向力工况
+        "reqs_brake": [
+            // 轮胎纵向力
+            "left_tire_forces", "right_tire_forces",
+            // 前束角
+            "toe_angle", "toe_angle",
+            // 外倾角
+            "camber_angle", "camber_angle",
+            // 主销后倾角
+            "caster_angle", "caster_angle",
+            // 抗点头率
+            "anti_dive_braking", "anti_dive_braking",
+            // 抗抬头率
+            "anti_lift_acceleration", "anti_lift_acceleration",
+            // 悬架纵向刚度
+            "fore_aft_wheel_center_stiffness", "fore_aft_wheel_center_stiffness",
+            // 全轮距
+            "total_track",
+            // 轴距
+            "wheel_travel_base", "wheel_travel_base"
+        ],
+
+        "comps_brake": ["longitudinal","longitudinal",
+            "left","right","left","right",
+            "left","right","left","right",
+            "left","right",
+            "left","right",
+            "track",
+            "base_left","base_right"
+        ],
+
+        // 侧向力工况
+        "reqs_damage": [
+            "left_hub_forces","right_hub_forces",
+            "toe_angle","toe_angle",
+            "camber_angle","camber_angle",
+            "wheel_travel_track","wheel_travel_track",
+            "total_track",
+            "wheel_travel_base","wheel_travel_base"
+        ],
+
+        "comps_damage": [
+            "lateral","lateral",
+            "left","right",
+            "left","right",
+            "track_left","track_right",
+            "track",
+            "base_left","base_right"
+        ],
+
+        // 回正力矩工况
+        "reqs_align": [
+            "left_tire_forces","right_tire_forces",
+            "toe_angle","toe_angle",
+            "camber_angle","camber_angle",
+            "total_track",
+            "wheel_travel_base","wheel_travel_base"
+        ],
+
+        "comps_align": [
+            "aligning_torque","aligning_torque",
+            "left","right",
+            "left","right",
+            "track",
+            "base_left","base_right"
+        ]
+    },
+
+    // 名称替换
+    "name_replace": {
+        "left_tire_forces": "Tire_Force_L",
+        "right_tire_forces": "Tire_Force_R",
+        "toe_angle": "Toe",
+        "camber_angle": "Camber",
+        "fore_aft_wheel_center_stiffness": "wheelKFx",
+        "left": "L",
+        "right": "R",
+        "base_left": "bL",
+        "base_right": "bR",
+        "aligning_torque": "align",
+        "track_left": "tL",
+        "track_right": "tR",
+
+        "suspension_roll_rate": "sKR",
+        "total_roll_rate": "tKR",
+        "vertical_left":"vL",
+        "vertical_right":"vR"
+    },
+
+    // 名称前置
+    // 平跳, 反跳, 纵向, 侧向, 回正
+    "strs_pre": ["p", "o", "bra", "dam", "ali"]
+}
+
