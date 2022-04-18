@@ -13,20 +13,25 @@ class Body:
         self.body_type = None
         self.dt = None  # 时间间隔
 
-
         self.l_length = None # 车长
         self.l_width = None # 车宽
 
         # 当前车速 km / s 
         self.cur_velocity = None
+
         # 当前body位置, 此处指代body几何中心
         self.cur_loc_body = None
+
         # 当前body相对原点坐标系旋转角 deg
         self.cur_r_body = None
-        # 相对转角中心
+
+        # 相对旋转中心
         self.cur_loc_st_relative = None
 
-        self.data_step = []
+        # 
+        self.step_locs = []
+        # 
+        self.step_states = []
 
         self.cur_locs = None
 
@@ -118,7 +123,14 @@ class Body:
 
     def record_locs(self):
 
-        self.data_step.append(self.cur_locs)
+        self.step_locs.append(self.cur_locs)
+
+        self.step_states.append(
+            {'loc': self.cur_loc_body, 
+            'angle': self.cur_r_body,
+            'loc_st': self.cur_loc_st_relative,
+            'velocity': self.cur_velocity,
+            })
 
     def sim_step(self):
 
@@ -165,13 +177,12 @@ class Body:
         self.get_cur_locs() # 更新状态
         self.record_locs() # 记录        
 
-
     def display_steps(self, axes_obj):
 
         # ------------------
         # 显示
         xs, ys = [], []
-        for step in self.data_step:
+        for step in self.step_locs:
             for loc in step:
                 xs.append(loc[0])
                 ys.append(loc[1])
@@ -182,29 +193,36 @@ class Body:
         # axes_obj.set_xlim([xmin, xmax])
         # axes_obj.set_ylim([ymin, ymax])
 
+    def goback_state(self, n_step):
+
+        for n in range(n_step):
+            cur_locs = self.step_locs.pop()
+            cur_states = self.step_states.pop()
+
+        # self.cur_locs = cur_locs
+        self.cur_loc_body = cur_states['loc']
+        self.cur_r_body = cur_states['angle']
+        self.cur_loc_st_relative = cur_states['loc_st']
+        self.cur_velocity = cur_states['velocity']
+        self.get_cur_locs()
 
 class CarAxle2:
 
     def __init__(self, params):
-        pass
         """
             起始位置为 第一轴中点
         """
-
         self.L_front_sus = params['L_front_sus']
         self.L_rear_sus = params['L_rear_sus']
         self.L = params['L']
         self.W = params['W']
         self.wheelbase = params['wheelbase']
-        # self.velocity = params['velocity']
-
-        # self.dt = params['dt']
         self.ds = params['ds']
 
         self.length = self.L + self.L_front_sus + self.L_rear_sus
         self.width = self.W
 
-        # self.bodys = {}
+        self.step_carstates = []
 
     def create_body(self):
 
@@ -214,7 +232,6 @@ class CarAxle2:
         y0 = 0
         body.cur_loc_body = [x0, y0]  # 几何中心位置
 
-        # body.dt = self.dt
         body.l_length = self.length
         body.l_width = self.width
         body.create_loc_edge_locs_relative(self.ds)  # 边界创建
@@ -223,12 +240,12 @@ class CarAxle2:
         body.get_cur_locs()
         body.record_locs()
 
-        # self.bodys[num] = body
         self.body = body
 
     def set_velocity(self, velocity):
     
         self.body.cur_velocity = velocity
+        self.cur_velocity = velocity
 
     def set_dt(self, dt):
 
@@ -256,38 +273,60 @@ class CarAxle2:
 
             self.body.cur_loc_st_relative = [x0, y0]
 
+        self.cur_angle = angle_deg
 
+    def goback_state(self, n_step):
+
+        
+        for n in range(n_step):
+            cur_state = self.step_carstates.pop()
+
+        self.set_velocity(cur_state['velocity'])
+        self.set_wheel_angle(cur_state['angle'])
+
+        self.body.goback_state(n_step)
+
+
+    def sim_step(self):
+
+        self.step_carstates.append({
+            "velocity": self.cur_velocity,
+            "angle": self.cur_angle,            
+            })
+
+        self.body.sim_step()
 
 
 
 
 
 params = {
-    "L_front_sus": 2000,
-    "L_rear_sus": 3000,
+    "L_front_sus": 1000,
+    "L_rear_sus": 1000,
     "L": 5000,
     "W": 2000,
     "wheelbase": 2000,
     "ds": 100,
     }
 
-
 car = CarAxle2(params)
 car.create_body()
 
-car.set_velocity(10)
 car.set_dt(0.1)
-
-
-for n in range(120):
+for n in range(230):
+    if n == 100: 
+        car.goback_state(50)
+        # break
+    car.set_velocity(10)
     car.set_wheel_angle(30)
-    car.body.sim_step()
+    car.sim_step()
 
+# print(car.step_carstates)
+# print(car.step_carstates)
 
 # 显示
 axes1 = plt.subplot(111)
 car.body.display_steps(axes1)
-
 plt.xlim([-40000, 40000])
 plt.ylim([-40000, 40000])
 plt.show()
