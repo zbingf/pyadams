@@ -1,43 +1,41 @@
-
 # 默认单位 mm  km/h
-# 
+# 坐标系
+# 向前为X正
+# 向右为Y正
+
 import math
 import copy
+from pprint import pprint
+
+
 import numpy as np
-
 import matplotlib.pyplot as plt
+from mat4py import loadmat, savemat
 
-plt.rcParams['figure.figsize'] = [5,5]
+
+plt.rcParams['figure.figsize'] = [10, 10]
+
 
 class Body:
     # 车身
     def __init__(self):
         self.body_type = None
-        self.dt = None  # 时间间隔
+        self.cur_dt = None  # 时间间隔
 
         self.l_length = None # 车长
         self.l_width = None # 车宽
+        self.cur_velocity = 0 # 当前车速 km / s 
+        self.cur_loc_body = None # 当前body位置, 此处指代body几何中心
+        self.cur_yaw_body = None # 当前body相对原点坐标系旋转角 deg
+        self.cur_loc_st_relative = None # 相对旋转中心
+        self.cur_loc_edge = None # 车身边缘数据-当前
 
-        # 当前车速 km / s 
-        self.cur_velocity = None
-
-        # 当前body位置, 此处指代body几何中心
-        self.cur_loc_body = None
-
-        # 当前body相对原点坐标系旋转角 deg
-        self.cur_r_body = None
-
-        # 相对旋转中心
-        self.cur_loc_st_relative = None
-
-        # 
-        self.step_locs = []
-        # 
+        # 车身边缘数据-记录
+        self.step_locs_edge = []
+        # 车身状态数据
         self.step_states = []
 
-        self.cur_locs = None
-
-    def create_loc_edge_locs_relative(self, dis=5):
+    def create_loc_edge_locs_relative(self, dis=5, isEdge=False):
         """
             根据
                 长、宽
@@ -50,43 +48,45 @@ class Body:
         W = self.l_width
 
         locs = []
-
-        for n in range(int(L/2/dis)):
-            x = + n*dis
-            y = + W/2
-            
-            loc_n = [x, y]
-            locs.append(loc_n)
+        locs.append([L/2, -W/2])
         locs.append([L/2, W/2])
+        locs.append([-L/2, W/2])
+        locs.append([-L/2, -W/2])
 
-        for n in range(int(W/2/dis)):
-            x = + L/2
-            y = + n*dis
-            loc_n = [x, y]
-            locs.append(loc_n)
+        if isEdge: # 边创建
+            locs_edge = []
+            for n in range(int(L/2/dis)):
+                x = + n*dis
+                y = + W/2
+                loc_n = [x, y]
+                locs_edge.append(loc_n)
 
-        locs_right = copy.deepcopy(locs)
-        for loc in locs_right:
-            loc[0] = -loc[0]
+            for n in range(int(W/2/dis)):
+                x = + L/2
+                y = + n*dis
+                loc_n = [x, y]
+                locs_edge.append(loc_n)
 
-        locs_right.extend(locs)
+            locs_right = copy.deepcopy(locs_edge)
+            for loc in locs_right:
+                loc[0] = -loc[0]
+            locs_right.extend(locs_edge)
 
-        locs_left = copy.deepcopy(locs_right)
-        for loc in locs_left:
-            loc[1] = -loc[1]
+            locs_left = copy.deepcopy(locs_right)
+            for loc in locs_left:
+                loc[1] = -loc[1]
 
-        locs = [] + locs_right + locs_left
+            locs = locs + locs_left + locs_right
 
         self.locs_relative = locs
         return self.locs_relative
 
     def get_cur_locs(self):
 
-        locs_rotate = self.rotate_loc_relative(self.locs_relative, self.cur_r_body)
+        locs_rotate = self.rotate_loc_relative(self.locs_relative, self.cur_yaw_body)
         new_locs = self.move_loc_relative(locs_rotate, self.cur_loc_body)
 
-        self.cur_locs = new_locs
-        
+        self.cur_loc_edge = new_locs
         return new_locs
 
     @staticmethod
@@ -125,12 +125,12 @@ class Body:
 
     def record_locs(self):
 
-        self.step_locs.append(self.cur_locs)
+        self.step_locs_edge.append(self.cur_loc_edge)
 
         self.step_states.append(
             {
             'loc': copy.deepcopy(self.cur_loc_body), 
-            'angle': self.cur_r_body,
+            'yaw': self.cur_yaw_body,
             'loc_st': copy.deepcopy(self.cur_loc_st_relative),
             'velocity': self.cur_velocity,
             })
@@ -139,14 +139,13 @@ class Body:
 
         # mm/s
         velocity = self.cur_velocity / 3.6 * 1000
-        dt = self.dt
+        dt = self.cur_dt
 
         if self.cur_loc_st_relative == None:
             # 直线行驶
             # 矢量移动中心点
             
-            v = self.rotate_loc_relative([[1,0]], self.cur_r_body)[0]
-            v * self.dt * self.cur_velocity
+            v = self.rotate_loc_relative([[1,0]], self.cur_yaw_body)[0]
             self.cur_loc_body[0] = self.cur_loc_body[0] + v[0] * dt * velocity
             self.cur_loc_body[1] = self.cur_loc_body[1] + v[1] * dt * velocity
 
@@ -169,49 +168,62 @@ class Body:
             y2 = y1 - y0
 
             # 旋转得到绝对矢量
-            x3, y3 = self.rotate_loc_relative([[x2, y2]], self.cur_r_body)[0]
+            x3, y3 = self.rotate_loc_relative([[x2, y2]], self.cur_yaw_body)[0]
 
             # 重新定义状态
             self.cur_loc_body[0] = self.cur_loc_body[0] + x3
             self.cur_loc_body[1] = self.cur_loc_body[1] + y3
 
-            self.cur_r_body = self.cur_r_body + angle_deg
+            self.cur_yaw_body = self.cur_yaw_body + angle_deg
 
         self.get_cur_locs() # 更新状态
         self.record_locs() # 记录        
 
-    def display_steps(self, axes_obj):
+    def display_step_locs(self, axes_obj, d_recode=1):
+        """
 
+        """
         # ------------------
         # 显示
-        xs, ys = [], []
-        for step in self.step_locs:
+        locs_edge = self.step_locs_edge
+        n_length = len(locs_edge)
+        for num, step in enumerate(locs_edge):
+            # print(step, num)
+            if (n_length-1)!=num and num % d_recode != 0: continue
+
+            xs, ys = [], []
             for loc in step:
                 xs.append(loc[0])
                 ys.append(loc[1])
+            xs.append(step[0][0])
+            ys.append(step[0][1])
+            axes_obj.plot(xs, ys, 'b')
 
         # xmax, xmin = max(xs), min(xs)
         # ymax, ymin = max(ys), min(ys)
-        axes_obj.scatter(xs, ys)
+        # axes_obj.scatter(xs, ys)
+        
         # axes_obj.set_xlim([xmin, xmax])
         # axes_obj.set_ylim([ymin, ymax])
 
-    def goback_state(self, n_step):
+    def undo_steps(self, n_step):
 
         for n in range(n_step):
-            cur_locs = self.step_locs.pop()
+            cur_loc_edge = self.step_locs_edge.pop()
             cur_states = self.step_states.pop()
 
-        # self.cur_locs = cur_locs
+        # self.cur_loc_edge = cur_loc_edge
         self.cur_loc_body = cur_states['loc']
-        self.cur_r_body = cur_states['angle']
+        self.cur_yaw_body = cur_states['yaw']
         self.cur_loc_st_relative = cur_states['loc_st']
         self.cur_velocity = cur_states['velocity']
-
         self.get_cur_locs()
 
 
 class CarAxle2:
+    """
+        两轴车
+    """
 
     def __init__(self, params):
         """
@@ -222,12 +234,24 @@ class CarAxle2:
         self.L = params['L']
         self.W = params['W']
         self.wheelbase = params['wheelbase']
-        self.ds = params['ds']
+        self.ds_edge = params['ds_edge']
+        self.isEdge = params['isEdge']
 
         self.length = self.L + self.L_front_sus + self.L_rear_sus
         self.width = self.W
 
+        # 状态记录 
+        # 车速 \ 车轮转角
         self.step_states = []
+        self.step_states.append({
+            "velocity": 0,
+            "wheel_angle": 0,
+            "dt": 0,
+            })
+        
+        self.create_body()
+        
+
 
     def create_body(self):
 
@@ -239,9 +263,9 @@ class CarAxle2:
 
         body.l_length = self.length
         body.l_width = self.width
-        body.create_loc_edge_locs_relative(self.ds)  # 边界创建
+        body.create_loc_edge_locs_relative(self.ds_edge, self.isEdge)  # 边界创建
 
-        body.cur_r_body = 0
+        body.cur_yaw_body = 0
 
         body.get_cur_locs()
         body.record_locs()
@@ -255,7 +279,8 @@ class CarAxle2:
 
     def set_dt(self, dt):
 
-        self.body.dt = dt
+        self.body.cur_dt = dt
+        self.cur_dt = dt
 
     def set_wheel_angle(self, angle_deg):
         """
@@ -279,9 +304,9 @@ class CarAxle2:
 
             self.body.cur_loc_st_relative = [x0, y0]
 
-        self.cur_angle = angle_deg
+        self.cur_wheel_angle = angle_deg
 
-    def goback_state(self, n_step):
+    def undo_steps(self, n_step):
 
         
         for n in range(n_step):
@@ -290,65 +315,79 @@ class CarAxle2:
         self.set_velocity(cur_state['velocity'])
         self.set_wheel_angle(cur_state['angle'])
 
-        self.body.goback_state(n_step)
-
+        self.body.undo_steps(n_step)
 
     def sim_step(self):
 
         self.step_states.append({
             "velocity": self.cur_velocity,
-            "angle": self.cur_angle,            
+            "wheel_angle": self.cur_wheel_angle,
+            "dt": self.cur_dt
             })
 
         self.body.sim_step()
 
+    
+get_key_steps = lambda steps, key: [step[key] for step in steps]
 
-from pprint import pprint
+def get_join_list3d(list3d):
+    new_list2d = []
+    for list2d in list3d:
+        for line in list2d:
+            new_list2d.append(line)
+    return new_list2d
+
+
+
+# ------------------------------
+# ------------------------------
 
 params = {
     "L_front_sus": 1000,
     "L_rear_sus": 1000,
     "L": 5000,
     "W": 2000,
-    "wheelbase": 2000,
-    "ds": 300,
+    "wheelbase": 2000, # 主销间距
+    "ds_edge": 50,    # edge间隙
+    "isEdge": False,
     }
 
-car = CarAxle2(params)
-car.create_body()
 
+car = CarAxle2(params)
 
 ts = []
-num_step = 52
-
-step_drives = []
+num_step = 200
 for n in range(num_step):
     # if n == 100: 
-    #     car.goback_state(99)
+    #     car.undo_steps(99)
         # break
     car.set_dt(0.1)
     car.set_velocity(10)
     car.set_wheel_angle(30)
-    
-    step_drives.append({
-        "dt": 0.1,
-        "velocity": 10,
-        "wheel_angle": 30,
-        })
-
     car.sim_step()
 
-print(car.body.step_states[-1])
+
+# print(car.body.step_states[-1])
+# print(car.step_states[-1])
 # print(car.step_states)
 
 
-
+data_mat = {
+    'loc': get_key_steps(car.body.step_states, 'loc'),
+    'yaw': get_key_steps(car.body.step_states, 'yaw'),
+    'velocity': get_key_steps(car.step_states, 'velocity'),
+    'dt': get_key_steps(car.step_states, 'dt'),
+    'wheel_angle': get_key_steps(car.step_states, 'wheel_angle'),
+    'loc_edge': get_join_list3d(car.body.step_locs_edge),
+}
+# print(data_mat)
+savemat(r'state.mat', data_mat)
 
 
 # --------------------------------------
 # 显示1
 axes1 = plt.subplot(111)
-car.body.display_steps(axes1)
+car.body.display_step_locs(axes1, 10)
 plt.xlim([-40000, 40000])
 plt.ylim([-40000, 40000])
 plt.show()
