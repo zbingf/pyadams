@@ -3,6 +3,10 @@
 # 向前为X正
 # 向右为Y正
 
+# 车轮-右转为正
+# 车轮-左转为负
+
+
 import math
 import copy
 from pprint import pprint
@@ -14,6 +18,16 @@ from mat4py import loadmat, savemat
 
 
 plt.rcParams['figure.figsize'] = [10, 10]
+
+
+get_key_steps = lambda steps, key: [step[key] for step in steps]
+
+def get_join_list3d(list3d):
+    new_list2d = []
+    for list2d in list3d:
+        for line in list2d:
+            new_list2d.append(line)
+    return new_list2d
 
 
 class Body:
@@ -171,8 +185,8 @@ class Body:
             x3, y3 = self.rotate_loc_relative([[x2, y2]], self.cur_yaw_body)[0]
 
             # 重新定义状态
-            self.cur_loc_body[0] = self.cur_loc_body[0] + x3
-            self.cur_loc_body[1] = self.cur_loc_body[1] + y3
+            self.cur_loc_body[0] = self.cur_loc_body[0] - x3
+            self.cur_loc_body[1] = self.cur_loc_body[1] - y3
 
             self.cur_yaw_body = self.cur_yaw_body + angle_deg
 
@@ -192,12 +206,13 @@ class Body:
             if (n_length-1)!=num and num % d_recode != 0: continue
 
             xs, ys = [], []
-            for loc in step:
+            for loc in step[:4]:
                 xs.append(loc[0])
                 ys.append(loc[1])
             xs.append(step[0][0])
             ys.append(step[0][1])
-            axes_obj.plot(xs, ys, 'b')
+            axes_obj.plot(xs[:2], ys[:2], 'r') # 车头
+            axes_obj.plot(xs[1:], ys[1:], 'b')
 
         # xmax, xmin = max(xs), min(xs)
         # ymax, ymin = max(ys), min(ys)
@@ -327,15 +342,21 @@ class CarAxle2:
 
         self.body.sim_step()
 
-    
-get_key_steps = lambda steps, key: [step[key] for step in steps]
+    def get_result_data(self):
 
-def get_join_list3d(list3d):
-    new_list2d = []
-    for list2d in list3d:
-        for line in list2d:
-            new_list2d.append(line)
-    return new_list2d
+        data_mat = {
+            'loc': get_key_steps(self.body.step_states, 'loc'),
+            'yaw': get_key_steps(self.body.step_states, 'yaw'),
+            'velocity': get_key_steps(self.step_states, 'velocity'),
+            'dt': get_key_steps(self.step_states, 'dt'),
+            'wheel_angle': get_key_steps(self.step_states, 'wheel_angle'),
+            'loc_edge': get_join_list3d(self.body.step_locs_edge),
+        }
+
+        return data_mat
+    
+
+
 
 
 
@@ -349,59 +370,107 @@ params = {
     "W": 2000,
     "wheelbase": 2000, # 主销间距
     "ds_edge": 50,    # edge间隙
-    "isEdge": False,
+    "isEdge": True,
     }
 
 
-car = CarAxle2(params)
-
-ts = []
-num_step = 200
-for n in range(num_step):
-    # if n == 100: 
-    #     car.undo_steps(99)
-        # break
-    car.set_dt(0.1)
-    car.set_velocity(10)
-    car.set_wheel_angle(30)
-    car.sim_step()
 
 
-# print(car.body.step_states[-1])
-# print(car.step_states[-1])
-# print(car.step_states)
+
+def test_view(car):
+    # --------------------------------------
+    # 显示1
+    data_mat = car.get_result_data()
+
+    x_min_1 = min(data_mat['loc_edge'], key=lambda data: data[0])[0]
+    x_max_1 = max(data_mat['loc_edge'], key=lambda data: data[0])[0]
+
+    y_min_1 = min(data_mat['loc_edge'], key=lambda data: data[1])[1]
+    y_max_1 = max(data_mat['loc_edge'], key=lambda data: data[1])[1]
+
+    # print([x_min_1, y_min_1])
+    # print([x_max_1, y_max_1])
+
+    n_min = min([x_min_1, y_min_1])
+    n_max = max([x_max_1, y_max_1])
+
+    axes1 = plt.subplot(111)
+    car.body.display_step_locs(axes1, 5)
+
+    xs = np.linspace(-10000, 1000000, num=10000)
+    ys = np.array([2000 for n in range(10000)])
+    axes1.plot(xs, ys, 'g')
+    
+
+    plt.xlim([n_min, n_max])
+    plt.ylim([n_min, n_max])
+    plt.show()
 
 
-data_mat = {
-    'loc': get_key_steps(car.body.step_states, 'loc'),
-    'yaw': get_key_steps(car.body.step_states, 'yaw'),
-    'velocity': get_key_steps(car.step_states, 'velocity'),
-    'dt': get_key_steps(car.step_states, 'dt'),
-    'wheel_angle': get_key_steps(car.step_states, 'wheel_angle'),
-    'loc_edge': get_join_list3d(car.body.step_locs_edge),
-}
-# print(data_mat)
-savemat(r'state.mat', data_mat)
+    # # 显示2
+    # steps = car.body.step_states
+    # line, line1 = [], []
+    # for dic in steps: line.append(dic['loc'][0])
+    # for dic in steps: line1.append(dic['loc'][1])
+
+    # # print(steps)
+    # # plt.plot(range(len(line)),line)
+    # plt.plot(line1,line)
+    # plt.show()
 
 
-# --------------------------------------
-# 显示1
-axes1 = plt.subplot(111)
-car.body.display_step_locs(axes1, 10)
-plt.xlim([-40000, 40000])
-plt.ylim([-40000, 40000])
-plt.show()
+def test_sim1():
+    car = CarAxle2(params)
 
-# pprint(car.body.step_states)
+    ts = []
+    num_step = 100
+    for n in range(num_step):
+        # if n == 100: 
+        #     car.undo_steps(99)
+            # break
+        car.set_dt(0.1)
+        car.set_velocity(10)
+        car.set_wheel_angle(10)
+        car.sim_step()
+
+    data_mat = car.get_result_data()
+    # print(data_mat)
+    savemat(r'state.mat', data_mat)
+
+    test_view(car)
 
 
-# # 显示2
-# steps = car.body.step_states
-# line, line1 = [], []
-# for dic in steps: line.append(dic['loc'][0])
-# for dic in steps: line1.append(dic['loc'][1])
+def test_sim2():
 
-# # print(steps)
-# # plt.plot(range(len(line)),line)
-# plt.plot(line1,line)
-# plt.show()
+    car = CarAxle2(params)
+
+    data_mat = loadmat(r'state.mat')
+
+    ts = []
+    n = -1
+    for dt, wheel_angle, velocity in zip(data_mat['dt'], data_mat['wheel_angle'], data_mat['velocity']):
+        n += 1
+        if n==0: continue
+        car.set_dt(dt)
+        car.set_velocity(velocity)
+        car.set_wheel_angle(wheel_angle)
+        car.sim_step()
+    
+    test_view(car)
+
+
+
+if __name__=='__main__':
+    pass
+    
+    # test_sim1()
+
+    test_sim2()
+
+    
+    
+    
+    
+    
+    
+    
