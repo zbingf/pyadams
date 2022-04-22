@@ -1,7 +1,7 @@
 # 默认单位 mm  km/h
 # 坐标系
 # 向前为X正
-# 向右为Y正
+# 向左为Y正
 
 # 车轮-右转为正
 # 车轮-左转为负
@@ -33,6 +33,7 @@ get_np_linspace = lambda x_range, d_s: np.linspace(*x_range, num=int((x_range[1]
 
 
 class Body:
+
     # 车身
     def __init__(self):
         self.body_type = None
@@ -51,12 +52,16 @@ class Body:
         # 车身状态数据
         self.step_states = []
 
-    def create_loc_edge_locs_relative(self, dis=5, isEdge=False):
+    def create_loc_edge_locs_relative(self, x_dis, dis=5, isEdge=False):
         """
             根据
-                长、宽
-                当前body位置
-                当前body转角
+                长、宽创建
+                    当前body位置
+                    当前body转角
+
+                x_dis   调整X位置
+                dis     位移间隔
+                isEdge  边界线创建
         """
         # dis = 3
 
@@ -71,31 +76,50 @@ class Body:
 
         if isEdge: # 边创建
             locs_edge = []
-            for n in range(int(L/2/dis)):
+            # 左上
+            for n in range(int(L/2/dis)): 
                 x = + n*dis
                 y = + W/2
                 loc_n = [x, y]
                 locs_edge.append(loc_n)
-
+            
             for n in range(int(W/2/dis)):
                 x = + L/2
                 y = + n*dis
                 loc_n = [x, y]
                 locs_edge.append(loc_n)
 
-            locs_right = copy.deepcopy(locs_edge)
-            for loc in locs_right:
-                loc[0] = -loc[0]
-            locs_right.extend(locs_edge)
+            locs_left = copy.deepcopy(locs_edge)
 
-            locs_left = copy.deepcopy(locs_right)
+            # 左下
             for loc in locs_left:
+                loc[0] = -loc[0]
+            locs_left.extend(locs_edge)
+
+            # 右上 & 右下
+            locs_right = copy.deepcopy(locs_left)
+            for loc in locs_right:
                 loc[1] = -loc[1]
 
             locs = locs + locs_left + locs_right
-
+        for loc in locs:
+            loc[0] += x_dis
+        print(locs)
         self.locs_relative = locs
         return self.locs_relative
+
+    def get_loc_direction(self, n):
+
+        if n <= 3:
+            direction_dic = {0:'FR', 1:'FL', 2:'RL', 4:'RR'}
+            return direction_dic[n]
+
+        else:
+            n -= 3
+            new_locs = self.locs_relative[4:]
+            n_len = len(new_locs)/4
+            direction_dic = {1:'FL', 2:'RL', 3:'FR', 4:'RR'}
+            return direction_dic[math.ceil(n / n_len)]
 
     def get_cur_locs(self):
 
@@ -167,28 +191,33 @@ class Body:
 
         else:
             # 转弯
-            # 1、矢量移动中心点
+            # 1、矢量移动中心点, 前轴中心
             # 2、直线行驶
             
-            x0 = -self.cur_loc_st_relative[0]
-            y0 = -self.cur_loc_st_relative[1]
+            x0 = self.cur_loc_st_relative[0] # 轴距
+            y0 = -self.cur_loc_st_relative[1] # 旋转中心坐标
+            # print(x0)
             
-            R = (x0**2+y0**2)**0.5
+            R = (x0**2 + y0**2)**0.5 # 转弯半径
             rotate_v = (velocity / R) # rad/s
-            angle_deg = rotate_v*dt * 180/math.pi
-            if y0<0: angle_deg = -angle_deg
+            angle_deg = rotate_v * dt * 180/math.pi # 旋转角
+            print(angle_deg)
+            if y0 > 0: angle_deg = -angle_deg
+            print(angle_deg)
 
             # 相对位移量
-            x1, y1 = self.rotate_loc_relative([[x0, y0]], angle_deg)[0]
+            x1, y1 = self.rotate_loc_relative([[x0, -y0]], -angle_deg)[0]
             x2 = x1 - x0
-            y2 = y1 - y0
+            y2 = y1 + y0
+            print(x2, y2)
 
             # 旋转得到绝对矢量
             x3, y3 = self.rotate_loc_relative([[x2, y2]], self.cur_yaw_body)[0]
+            print(x3, y3)
 
             # 重新定义状态
-            self.cur_loc_body[0] = self.cur_loc_body[0] - x3
-            self.cur_loc_body[1] = self.cur_loc_body[1] - y3
+            self.cur_loc_body[0] = self.cur_loc_body[0] + x3
+            self.cur_loc_body[1] = self.cur_loc_body[1] + y3
 
             self.cur_yaw_body = self.cur_yaw_body + angle_deg
 
@@ -266,20 +295,20 @@ class CarAxle2:
             })
         
         self.create_body()
-        
-
 
     def create_body(self):
 
         body = Body()
 
+        # x0 = self.length/2 - self.L_rear_sus
         x0 = self.L_front_sus - self.length/2
-        y0 = 0
-        body.cur_loc_body = [x0, y0]  # 几何中心位置
+        # y0 = 0
+        # body.cur_loc_body = [x0, y0]  # 几何中心位置
+        body.cur_loc_body = [0, 0]  # 几何中心位置
 
         body.l_length = self.length
         body.l_width = self.width
-        body.create_loc_edge_locs_relative(self.ds_edge, self.isEdge)  # 边界创建
+        body.create_loc_edge_locs_relative(x0, self.ds_edge, self.isEdge)  # 边界创建
 
         body.cur_yaw_body = 0
 
@@ -310,13 +339,14 @@ class CarAxle2:
         elif angle_deg>0:
             # 右转
             x0 = -self.L
-            y0 = (self.L / math.tan(angle_deg/180*math.pi) -self.wheelbase/2)
-            self.body.cur_loc_st_relative = [x0, y0]
+            y0 = -(self.L / math.tan(angle_deg/180*math.pi) -self.wheelbase/2)
+            self.body.cur_loc_st_relative = [x0, y0] # 旋转中心
+            # print(x0, y0)
 
         elif angle_deg<0:
             # 左转
             x0 = -self.L
-            y0 = -(self.L / math.tan(-angle_deg/180*math.pi) -self.wheelbase/2)
+            y0 = (self.L / math.tan(-angle_deg/180*math.pi) -self.wheelbase/2)
 
             self.body.cur_loc_st_relative = [x0, y0]
 
@@ -357,12 +387,98 @@ class CarAxle2:
         return data_mat
     
 
+# 坐标区域扩展
+def _area_xy(x, y):
+    xs = [x+1, x, x-1]
+    ys = [y+1, y, y-1]
+    areas = []
+    for x in xs:
+        for y in ys:
+            areas.append((x, y))
+    return areas
 
+
+# 坐标划分
+def area_cal(xs, ys, dis_limit=10):
+    # dis_limit 区域限制 mm
+    
+    # areas = set()
+    areas = []
+    areas_to_ns = {}
+    n = 0
+    for x, y in zip(xs, ys):
+        
+        x = round(x / dis_limit)
+        y = round(y / dis_limit)
+        key = (x, y)
+        area = _area_xy(*key)
+        areas.extend(area)
+        for temp_key in area:
+            if temp_key not in areas_to_ns: areas_to_ns[temp_key] = []
+            areas_to_ns[temp_key].append(n)
+        # areas = areas | set(area)
+        # print(areas)
+        n += 1
+    
+    return set(areas), areas_to_ns
+
+
+def area_check(edge_areas, cur_areas):
+
+    for loc in cur_areas:
+        if loc in edge_areas:
+            # 干涉
+            return loc
+    return True
 
 
 
 # ------------------------------
 # ------------------------------
+
+# 边界
+def limit_edge(axes1=None):
+
+    d_s = 10
+
+    x_limit = 10000
+    y_limit = 4000
+    y_loc = 3000
+
+    #  横坐标线
+    x_range = [-10000, x_limit]
+    xs_1 = get_np_linspace(x_range, d_s)
+    ys_1 = np.array([y_loc for n in range(len(xs_1))])
+
+    # 纵坐标线
+    ys_2 = get_np_linspace([y_loc-y_limit, y_loc], d_s)
+    xs_2 = np.array([x_limit for n in range(len(ys_2))])
+
+    x_range_3 = [x_limit, 100000]
+    xs_3 = get_np_linspace(x_range_3, d_s)
+    ys_3 = np.array([y_loc-y_limit for n in range(len(xs_3))]) 
+
+    if axes1!=None:
+        axes1.plot(xs_1, ys_1, 'g')
+        axes1.plot(xs_2, ys_2, 'g')
+        axes1.plot(xs_3, ys_3, 'g')
+    
+    xs_list = [xs_1, xs_2, xs_3]
+    ys_list = [ys_1, ys_2, ys_3]
+    
+    return xs_list, ys_list
+
+
+xs_list, ys_list = limit_edge()
+xs_edge, ys_edge = np.hstack(xs_list), np.hstack(ys_list)
+
+
+# 边界监测范围
+dis_limit_edge = 50
+
+# 边界
+edge_areas, __ = area_cal(xs_edge, ys_edge, dis_limit=dis_limit_edge)
+
 
 params = {
     "L_front_sus": 1000,
@@ -423,18 +539,33 @@ def test_sim1():
     car = CarAxle2(params)
 
     ts = []
-    num_step = 100
+    num_step = 200
     for n in range(num_step):
         # if n == 100: 
         #     car.undo_steps(99)
             # break
         car.set_dt(0.1)
-        car.set_velocity(10)
+        car.set_velocity(5)
         car.set_wheel_angle(10)
+        # car.set_wheel_angle(15)
         car.sim_step()
 
+        xs_cur = [loc[0] for loc in car.body.cur_loc_edge]
+        ys_cur = [loc[1] for loc in car.body.cur_loc_edge]
+        cur_areas, cur_areas_to_ns = area_cal(xs_cur, ys_cur, dis_limit=dis_limit_edge)
+        check_result = area_check(edge_areas, cur_areas)
+        
+        if check_result!=True: # 干涉
+            n_checks = cur_areas_to_ns[check_result]
+            for n in n_checks:
+                print(car.body.get_loc_direction(n))
+            # print(n_checks)
+
+            # 终止
+            break
+        # print(data_mat)
+
     data_mat = car.get_result_data()
-    # print(data_mat)
     savemat(r'state.mat', data_mat)
 
     test_view(car)
@@ -459,42 +590,10 @@ def test_sim2():
     test_view(car)
 
 
-
-def limit_edge(axes1=None):
-
-    d_s = 10
-
-    x_limit = 10000
-    y_limit = 4000
-    y_loc = 2000
-
-    #  横坐标线
-    x_range = [-10000, x_limit]
-    xs_1 = get_np_linspace(x_range, d_s)
-    ys_1 = np.array([y_loc for n in range(len(xs_1))])
-
-    # 纵坐标线
-    ys_2 = get_np_linspace([y_loc-y_limit, y_loc], d_s)
-    xs_2 = np.array([x_limit for n in range(len(ys_2))])
-
-    x_range_3 = [x_limit, 100000]
-    xs_3 = get_np_linspace(x_range_3, d_s)
-    ys_3 = np.array([y_loc-y_limit for n in range(len(xs_3))]) 
-
-    if axes1!=None:
-        axes1.plot(xs_1, ys_1, 'g')
-        axes1.plot(xs_2, ys_2, 'g')
-        axes1.plot(xs_3, ys_3, 'g')
-    
-    xs_list = [xs_1, xs_2, xs_3]
-    ys_list = [ys_1, ys_2, ys_3]
-    
-    return xs_list, ys_list
-
-
 if __name__=='__main__':
     pass
     
-    # test_sim1()
+    test_sim1()
 
-    test_sim2()
+    # test_sim2()
+    # test_area_split()
