@@ -15,6 +15,7 @@ from pprint import pprint
 
 # 调用库
 import numpy as np
+from scipy import interpolate
 import matplotlib.pyplot as plt
 from mat4py import loadmat, savemat
 
@@ -483,115 +484,109 @@ def limit_edge_crose():
 # ------------------------------
 # 
 
-xs_edge_list, ys_edge_list = limit_edge_crose()
-xs_edge, ys_edge = np.hstack(xs_edge_list), np.hstack(ys_edge_list)
+class Driver:
 
-# 边界监测范围
-dis_limit_edge = 50
+    def __init__(self, param_driver):
 
-# 边界
-edge_areas, __ = area_cal(xs_edge, ys_edge, dis_limit=dis_limit_edge)
+        self.param_driver = param_driver
+        self.dis_limit_edge = param_driver.get("dis_limit_edge", 50)
+        self.dt = param_driver.get("dt", 0.1)
+        self.velocity = param_driver.get("velocity", 5)
 
-# 
-# xs_edge2, ys_edge2 = area_cal(xs_edge, ys_edge, dis_limit=dis_limit_edge)
+    # 边界设置
+    def set_limit_edge(self, func):
 
+        dis_limit_edge = self.dis_limit_edge
 
-params = {
-    "L_front_sus": 1000,
-    "L_rear_sus": 1000,
-    "L": 5000,
-    "W": 2000,
-    "wheelbase": 2000, # 主销间距
-    "ds_edge": 50,    # edge间隙
-    "isEdge": True,
-    }
+        self.xs_edge_list, self.ys_edge_list = func()
+        self.xs_edge, self.ys_edge = np.hstack(self.xs_edge_list), np.hstack(self.ys_edge_list)
+        # 边界
+        self.edge_areas, __ = area_cal(self.xs_edge, self.ys_edge, dis_limit=dis_limit_edge)
 
-
-# 结果显示
-def view_result(car):
-    # --------------------------------------
-    # 显示1
-    data_mat = car.get_result_data()
-
-    x_min_1 = min(data_mat['loc_edge'], key=lambda data: data[0])[0]
-    x_max_1 = max(data_mat['loc_edge'], key=lambda data: data[0])[0]
-
-    y_min_1 = min(data_mat['loc_edge'], key=lambda data: data[1])[1]
-    y_max_1 = max(data_mat['loc_edge'], key=lambda data: data[1])[1]
-
-    # print([x_min_1, y_min_1])
-    # print([x_max_1, y_max_1])
-
-    n_min = min([x_min_1, y_min_1])
-    n_max = max([x_max_1, y_max_1])
-
-    axes1 = plt.subplot(111)
-    car.body.display_step_locs(axes1, 5)
-
-    # --------------------------------------
-    # 边界
-    for xs_n, ys_n in zip(xs_edge_list, ys_edge_list):
-        axes1.plot(xs_n, ys_n, 'g')
-
-    # xs_list, ys_list = limit_edge_crose(axes1)
-    # xs_edge, ys_edge = np.hstack(xs_list), np.hstack(ys_list)
-
-    # major_locator = plt.MultipleLocator(5000)
-    # axes1.xaxis.set_major_locator(major_locator)
-    # axes1.yaxis.set_major_locator(major_locator)
-    
-    plt.xlim([n_min, n_max])
-    plt.ylim([n_min, n_max])
-    plt.show()
-
-    # # 显示2
-    # steps = car.body.step_states
-    # line, line1 = [], []
-    # for dic in steps: line.append(dic['loc'][0])
-    # for dic in steps: line1.append(dic['loc'][1])
-
-    # # print(steps)
-    # # plt.plot(range(len(line)),line)
-    # plt.plot(line1,line)
-    # plt.show()
-
-
-# 驾驶
-def dirve_sim():
-
-    is_success = True
-    car = CarAxle2(params)
-
-    ts = []
-    num_step = 100 # 步长
-    wheel_angle_rate_limit = 10  # deg/s 转角速度限制
-    for n in range(num_step):
-
-        # 计算
-        car.set_dt(0.1)
-        car.set_velocity(5)
-        car.set_wheel_angle(20)
-        car.sim_step()
-
-        # 检测
-        xs_cur = [loc[0] for loc in car.body.cur_loc_edge]
-        ys_cur = [loc[1] for loc in car.body.cur_loc_edge]
-        cur_areas, cur_areas_to_ns = area_cal(xs_cur, ys_cur, dis_limit=dis_limit_edge)
-        check_result = area_check(edge_areas, cur_areas)
+    # 设置Car
+    def set_car(self, car_class, param_car):
         
-        if check_result!=True: # 干涉
-            n_checks = cur_areas_to_ns[check_result]
-            # print(check_result)
-            for n_loc in n_checks:
-                print(car.body.get_loc_direction(n_loc))
-            # car.undo_steps(10) # 回退
-            is_success = False
-            break # 终止
-        # print(data_mat)
+        self.car = car_class(param_car)
 
-    data_mat = car.get_result_data()
+    # 驾驶
+    def dirve_sim(self, fit_wheel_angle, duration):
+        """
+            duration : 时长
+        """
+        # params = self.params
+        # car = CarAxle2(params)
+        dis_limit_edge = self.dis_limit_edge
+        car = self.car
+        dt = self.dt
+        velocity = self.velocity
+        
+        num_step = math.ceil(duration / dt)
+        # wheel_angle_rate_limit = 10  # deg/s 转角速度限制
+        cur_t = 0
+        # is_success = True
+        result = None
+        for n in range(num_step):
+
+            # 计算
+            car.set_dt(dt)
+            car.set_velocity(velocity)
+            car.set_wheel_angle(fit_wheel_angle(cur_t))
+            car.sim_step()
+            cur_t += dt
+
+            # 检测
+            xs_cur = [loc[0] for loc in car.body.cur_loc_edge]
+            ys_cur = [loc[1] for loc in car.body.cur_loc_edge]
+            cur_areas, cur_areas_to_ns = area_cal(xs_cur, ys_cur, dis_limit=dis_limit_edge)
+            check_result = area_check(self.edge_areas, cur_areas)
+            
+            if check_result != True: # 干涉
+                n_checks = cur_areas_to_ns[check_result]
+                # print(n_checks)
+                for n_loc in n_checks:
+                    # print(car.body.get_loc_direction(n_loc))
+                    result = car.body.get_loc_direction(n_loc)
+                    # print(result, n_loc)
+                # car.undo_steps(10) # 回退
+                # is_success = False
+                break # 终止
+            # print(data_mat)
+
+        # data_mat = car.get_result_data()
+        # print(cur_t, duration, result)
+
+        return result, cur_t
+
+
+    def display(self):
+        # 结果显示
     
-    return is_success, car, data_mat
+        car = self.car
+        # --------------------------------------
+        # 显示1
+        data_mat = car.get_result_data()
+
+        x_min_1 = min(data_mat['loc_edge'], key=lambda data: data[0])[0]
+        x_max_1 = max(data_mat['loc_edge'], key=lambda data: data[0])[0]
+
+        y_min_1 = min(data_mat['loc_edge'], key=lambda data: data[1])[1]
+        y_max_1 = max(data_mat['loc_edge'], key=lambda data: data[1])[1]
+
+        n_min = min([x_min_1, y_min_1])
+        n_max = max([x_max_1, y_max_1])
+
+        axes1 = plt.subplot(111)
+        car.body.display_step_locs(axes1, 5)
+
+        # --------------------------------------
+        # 边界
+        for xs_n, ys_n in zip(self.xs_edge_list, self.ys_edge_list):
+            axes1.plot(xs_n, ys_n, 'g')
+
+        plt.xlim([n_min, n_max])
+        plt.ylim([n_min, n_max])
+        plt.show()
+
 
 
 # 加载
@@ -615,12 +610,41 @@ def load_sim():
 
 
 
+
+
 if __name__=='__main__':
     pass
-    
-    is_success, car, data_mat = dirve_sim()
-    savemat(r'state.mat', data_mat)
-    view_result(car)
+
+    param_car = {
+        "L_front_sus": 1000,
+        "L_rear_sus": 1000,
+        "L": 5000,
+        "W": 2000,
+        "wheelbase": 2000, # 主销间距
+        "ds_edge": 50,    # edge间隙
+        "isEdge": True,
+        }
+
+    param_driver = {
+        "dis_limit_edge": 50, # 边界监测范围
+        "dt": 0.1,
+        "velocity": 5,
+        }
+
+    spline_s = 0.1
+    wheel_angles = [0, 15, 15, 8, -4, 0, 0, 0, -5, -5, -10, -4, 0, 0, 0, 0]
+    ts = [n for n in range(len(wheel_angles))]
+    fit_obj = interpolate.UnivariateSpline(ts, wheel_angles, s=spline_s)
+
+    driver = Driver(param_driver)
+    driver.set_limit_edge(limit_edge_crose)
+    driver.set_car(CarAxle2, param_car)
+    result, cur_t = driver.dirve_sim(fit_obj, len(wheel_angles))
+    print(result, cur_t)
+    data_mat = driver.car.get_result_data()
+    # print(data_mat)
+    # savemat(r'state.mat', data_mat)
+    driver.display()
 
 
     # load_sim()
