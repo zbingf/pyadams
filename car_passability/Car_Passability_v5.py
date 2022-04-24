@@ -13,6 +13,10 @@ import copy
 from pprint import pprint
 
 
+# 
+from tkui import VarSearchUi
+
+
 # 调用库
 import numpy as np
 from scipy import interpolate
@@ -523,6 +527,7 @@ class Driver:
         num_step = math.ceil(duration / dt)
         # wheel_angle_rate_limit = 10  # deg/s 转角速度限制
         cur_t = 0
+        # wheel_angles = []
         # is_success = True
         result = None
         for n in range(num_step):
@@ -530,7 +535,8 @@ class Driver:
             # 计算
             car.set_dt(dt)
             car.set_velocity(velocity)
-            car.set_wheel_angle(fit_wheel_angle(cur_t))
+            cur_wheel_angle = fit_wheel_angle(cur_t)
+            car.set_wheel_angle(cur_wheel_angle)
             car.sim_step()
             cur_t += dt
 
@@ -558,7 +564,7 @@ class Driver:
         return result, cur_t
 
 
-    def display(self):
+    def display(self, axes1=None):
         # 结果显示
     
         car = self.car
@@ -575,7 +581,8 @@ class Driver:
         n_min = min([x_min_1, y_min_1])
         n_max = max([x_max_1, y_max_1])
 
-        axes1 = plt.subplot(111)
+        if axes1==None:
+            axes1 = plt.subplot(111)
         car.body.display_step_locs(axes1, 5)
 
         # --------------------------------------
@@ -609,11 +616,9 @@ def load_sim():
     view_result(car)
 
 
+RESULT_DICT = {None:0, 'RearLeft':1, 'FrontLeft':2, 'RearRight':3, 'FrontRight':4}
 
-
-
-if __name__=='__main__':
-    pass
+def test_run(wheel_angles):
 
     param_car = {
         "L_front_sus": 1000,
@@ -632,7 +637,6 @@ if __name__=='__main__':
         }
 
     spline_s = 0.1
-    wheel_angles = [0, 15, 15, 8, -4, 0, 0, 0, -5, -5, -10, -4, 0, 0, 0, 0]
     ts = [n for n in range(len(wheel_angles))]
     fit_obj = interpolate.UnivariateSpline(ts, wheel_angles, s=spline_s)
 
@@ -640,11 +644,37 @@ if __name__=='__main__':
     driver.set_limit_edge(limit_edge_crose)
     driver.set_car(CarAxle2, param_car)
     result, cur_t = driver.dirve_sim(fit_obj, len(wheel_angles))
-    print(result, cur_t)
+    # print(result, cur_t)
     data_mat = driver.car.get_result_data()
     # print(data_mat)
     # savemat(r'state.mat', data_mat)
-    driver.display()
+    # driver.display()
+
+    # return result, cur_t, data_mat, driver
+    return len(wheel_angles)-cur_t
+
+
+from optimization_pso import pso
+
+if __name__=='__main__':
+    pass
+    wheel_angles = [0, 15, 15, 8, -4, 0, 0, 0, -5, -5, -10, -4, 0, 0, 0, 0]
+
+    # result, cur_t, data_mat, driver = test_run(wheel_angles)
+    # test_run(wheel_angles)
+    lb = [-1, -30, -30, -30, -30, -30, -30, -30, -30, -30, -30, -30, -30, -30, -30, -1]        # 参数上限设定
+    ub = [1, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 1]     # 参数下限设定
+    g, fg, g_record, fg_record = pso(test_run, lb, ub, ieqcons=[], f_ieqcons=None, args=(), kwargs={}, 
+            swarmsize=200, omega=0.5, phip=0.5, phig=0.5, maxiter=100, 
+            minstep=1e-8, minfunc=1e-8, debug=False, processes=1,
+            particle_output=False)
+    print(g, fg)
+
+    
+    # driver.display()
+
+    # a = VarSearchUi('test', len(wheel_angles), values=wheel_angles, fun_cal=test_run, var_cal=None).run()
+
 
 
     # load_sim()
